@@ -16,3 +16,9 @@ _site/
 # counterproductive to check this file into the repository.
 # Details at https://github.com/github/pages-gem/issues/768
 Gemfile.lock
+
+# Local files
+.DS_Store
+.memory/
+.claude/settings.local.json
+.claude/.cc-writes/

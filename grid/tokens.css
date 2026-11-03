@@ -1,0 +1,71 @@
+/* Grid design tokens, dark theme only.
+   Generated from tokens.json in the Grid artifact (https://claude.ai/artifact/3NFt5Bva1ZnyUnoKLNeBjF, version 1792913383-a240).
+   Rule: every token in color, spacing, radius, shadow, opacity and reflection becomes --<name> with its
+   dark value; type.families become --font-<role>; a {name} alias becomes var(--name).
+   No @font-face: Saira loads from Google Fonts in index.html. */
+
+:root {
+  /* Colour */
+  --surface: #06090f;
+  --surface-raised: #0b121b;
+  --surface-sunken: #03050a;
+  --line: #1a2533;
+  --line-strong: #4a6478;
+  --line-lit: #7df9ff66;
+  --ink: #e8f1f7;
+  --ink-muted: #8ea2b6;
+  --ink-faint: #4a5d70;
+  --cyan: #7df9ff;
+  --cyan-soft: #0b2a36;
+  --amber: #ff7a00;
+  --amber-soft: #2e1604;
+  --ember: #ff1e2d;
+  --ember-soft: #2e0a0d;
+  --white-light: #dff6ff;
+  --link: var(--cyan);
+  --focus: var(--cyan);
+  --opal-cyan: #7df9ff1f;
+  --opal-pearl: #ffd9a81a;
+  --opal-mint: #b8fff01a;
+  --grid-line: #7df9ff0f;
+  --gloss-high: #ffffff24;
+  --gloss-low: #ffffff05;
+  --gloss-core: #ffffffb3;
+
+  /* Type families */
+  --font-display: "Saira", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-sans: "Saira", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-mono: "Monaspace Neon", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  /* Radius */
+  --radius-lg: 24px;
+  --radius-full: 9999px;
+
+  /* Shadow and glow */
+  --glow-cyan: 0 0 6px #7df9ff66, 0 0 16px #7df9ff33;
+  --glow-cyan-strong: 0 0 0 1px #dff6ff, 0 0 8px #7df9ff99, 0 0 24px #7df9ff4d;
+  --glow-amber: 0 0 6px #ff7a0066, 0 0 16px #ff7a0033;
+  --glow-line: 0 0 6px #7df9ff66, 0 0 14px #7df9ff33;
+  --focus-ring: 0 0 0 2px #06090f, 0 0 0 4px #7df9ff, 0 0 16px #7df9ffb3;
+  --glow-ember: 0 0 6px #ff1e2d66, 0 0 16px #ff1e2d33;
+  --gloss: inset 0 1px 0 #ffffff24, inset 0 -1px 0 #00000066;
+
+  /* Opacity */
+  --opacity-disabled: 0.4;
+  --opacity-texture: 0.8;
+
+  /* Reflection */
+  --reflection-gap: 2px;
+  --reflection-opacity: 0.22;
+  --reflection-blur: 2px;
+  --reflection-fade: 45%;
+}

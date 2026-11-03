@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>krenel.net</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wght@100..900&display=swap">
+<link rel="stylesheet" href="grid/tokens.css">
+<link rel="stylesheet" href="grid/bundle.css">
+<style>
+  /* Page-only sizes. Everything else is a Grid token (grid/tokens.css) or class (grid/bundle.css). */
+  :root {
+    --page-inset: clamp(var(--space-6), 6vw, var(--space-12)); /* left and right margin */
+    --name-size: clamp(28px, 11vw, 120px); /* keeps the name on one line from phone to desktop */
+    --name-weight: 200;      /* Grid's display style */
+    --name-tracking: 0.12em; /* Grid's display style */
+    --name-leading: 0.9;     /* as on Grid's Cover */
+    --horizon: 3fr 2fr;      /* sky above the horizon, floor below */
+    --floor-bottom: var(--space-6); /* space under the Dependencies button; the open panel's bottom edge sits on the same line */
+    --dependencies-width: 480px; /* widest the Dependencies panel gets */
+  }
+
+  /* The name stands on the horizon; the floor below holds its reflection, the button and the Dependencies note. */
+  .stage { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: var(--horizon); }
+  .sky, .floor { padding-inline: var(--page-inset); }
+  .sky { display: flex; align-items: flex-end; }
+  .floor { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-8); padding-bottom: var(--floor-bottom); }
+  h1, h2 { margin: 0; }
+  .name { font-family: var(--font-display); font-size: var(--name-size); font-weight: var(--name-weight); letter-spacing: var(--name-tracking); line-height: var(--name-leading); white-space: nowrap; }
+  a.gd-btn { text-decoration: none; }
+
+  /* Grid's README: the reflection's fade is clear at the floor and opaque by reflection-fade of the copy's height.
+     bundle.css (artifact version 1792913383-a240) measures it from the far end, which leaves the name legible.
+     This restores the README's fade; drop it once bundle.css is fixed in the artifact. */
+  .gd-reflection-copy::after { background: linear-gradient(0deg, transparent, var(--surface) var(--reflection-fade)); }
+
+  /* Dependencies: a quiet ghost button in the floor's corner opens a panel over it. It is a native popover,
+     so Esc, a click outside or Close dismisses it with no script. */
+  .dependencies-open { margin-top: auto; align-self: flex-end; color: var(--ink-muted); }
+  .dependencies:popover-open {
+    position: fixed; inset: auto var(--page-inset) var(--floor-bottom) auto; margin: 0; box-sizing: border-box;
+    width: min(var(--dependencies-width), calc(100vw - 2 * var(--page-inset)));
+    max-height: calc(100dvh - 2 * var(--floor-bottom));
+  }
+  .dependencies dl { margin: 0; }
+  .dependencies .gd-label { padding-left: 0; }
+  .dependencies dd { margin: 0 0 var(--space-4); color: var(--ink-muted); }
+  .dependencies dd:last-child { margin-bottom: 0; }
+  .dependencies a { color: var(--link); }
+  .dependencies a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+</style>
+</head>
+<body class="gd-opal">
+<main class="stage">
+  <div class="sky">
+    <h1 class="name">KRENEL-NET</h1>
+  </div>
+  <div class="gd-floor floor">
+    <div class="name gd-reflection-copy" aria-hidden="true">KRENEL-NET</div>
+    <a class="gd-btn gd-btn-primary" href="https://github.com/krenel-net">Open GitHub</a>
+    <button class="gd-btn gd-btn-ghost dependencies-open" popovertarget="dependencies">Dependencies</button>
+    <section id="dependencies" class="gd-panel dependencies" popover aria-labelledby="dependencies-title">
+      <div class="gd-panel-head">
+        <h2 id="dependencies-title" class="gd-panel-title">Dependencies</h2>
+        <button class="gd-btn gd-btn-ghost" popovertarget="dependencies" popovertargetaction="hide">Close</button>
+      </div>
+      <dl>
+        <dt class="gd-label">Font</dt>
+        <dd>The Saira font loads from Google Fonts. Your browser fetches it from fonts.googleapis.com and fonts.gstatic.com, so Google receives your IP address. <a href="https://fonts.google.com/faq#privacy">Google Fonts privacy</a></dd>
+        <dt class="gd-label">Hosting</dt>
+        <dd>GitHub Pages serves this site. GitHub logs each visitor's IP address for security. <a href="https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages#data-collection">GitHub Pages data collection</a></dd>
+        <dt class="gd-label">Cookies and scripts</dt>
+        <dd>None. This page sets no cookies and runs no scripts.</dd>
+      </dl>
+    </section>
+  </div>
+</main>
+</body>
+</html>
