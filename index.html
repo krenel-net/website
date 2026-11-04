@@ -19,6 +19,9 @@
     --horizon: 3fr 2fr;      /* sky above the horizon, floor below */
     --floor-bottom: var(--space-6); /* space under the Dependencies button; the open panel's bottom edge sits on the same line */
     --dependencies-width: 480px; /* widest the Dependencies panel gets */
+    --bloom-drift: 48px;     /* how far the blooms may travel; the blooms layer reaches this far past every screen edge */
+    --bloom-drift-duration: 1200ms; /* a slow, soft drift */
+    --bloom-drift-easing: ease-out;
   }
 
   /* The name stands on the horizon; the floor below holds its reflection, the button and the Dependencies note. */
@@ -44,6 +47,28 @@
      This restores the README's fade; drop it once bundle.css is fixed in the artifact. */
   .gd-reflection-copy::after { background: linear-gradient(0deg, transparent, var(--surface) var(--reflection-fade)); }
 
+  /* Grid's .gd-opal paints the blooms and the grid lines as one background, so moving the blooms would repaint the whole
+     screen. This keeps only the grid lines on the body (copied from grid/bundle.css) and moves the blooms to .blooms,
+     which can slide as a layer. Drop both rules once Grid offers the blooms as a separate layer. */
+  body.gd-opal {
+    background-image:
+      repeating-linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px var(--space-8)),
+      repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px var(--space-8));
+    background-repeat: repeat, repeat;
+  }
+  /* The same three blooms as .gd-opal, behind the page. The layer is larger than the screen by the drift on every side,
+     so sliding it never shows an edge. */
+  .blooms {
+    position: fixed; inset: calc(-1 * var(--bloom-drift)); z-index: -1; pointer-events: none;
+    background-image:
+      radial-gradient(ellipse 55% 45% at 18% 12%, var(--opal-cyan), transparent 70%),
+      radial-gradient(ellipse 50% 55% at 82% 88%, var(--opal-pearl), transparent 70%),
+      radial-gradient(ellipse 40% 40% at 62% 42%, var(--opal-mint), transparent 70%);
+    background-repeat: no-repeat;
+    transition: transform var(--bloom-drift-duration) var(--bloom-drift-easing);
+    will-change: transform;
+  }
+
   /* Dependencies: a quiet ghost button in the floor's corner opens a panel over it. It is a native popover,
      so Esc, a click outside or Close dismisses it with no script. */
   .dependencies-open { margin-top: auto; align-self: flex-end; color: var(--ink-muted); }
@@ -61,6 +86,7 @@
 </style>
 </head>
 <body class="gd-opal">
+<div class="blooms" aria-hidden="true"></div>
 <!-- The wordmark, one centre-line path per letter, one stroke width, flat ends, rounded corners. The letter origin is
      baked into each path's x: the lamp gradient is in user space, so letters must not be moved with x or transform.
      Named constants (user units): stroke S=10; corner radius R=14 on every corner (above S/2, so inner corners round too;
