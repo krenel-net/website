@@ -16,6 +16,7 @@
     --name-width: min(100vw - 2 * var(--page-inset), 960px); /* the wordmark's width; its height follows from the viewBox */
     --name-base-opacity: 0.03;      /* the unlit wordmark: a ghost a careful eye can still find */
     --name-glow: drop-shadow(0 0 4px var(--cyan)); /* static glow on the base wordmark: one small shadow, so the ghost has no hard edge */
+    --name-lit-glow: drop-shadow(0 0 6px var(--cyan)) drop-shadow(0 0 18px var(--cyan)); /* glow on the lit letters; it shines only where the lamp lights the stroke */
     --lamp-fade-duration: 300ms; /* the lit layer fading in under the pointer and out when it leaves */
     --lamp-fade-easing: ease;
     --half-height: 50vh;     /* half the screen; dvh below follows a phone's moving address bar */
@@ -50,14 +51,14 @@
   .floor { position: relative; overflow: hidden; display: flex; flex-direction: column; padding-bottom: var(--floor-bottom); } /* clips a reflection that runs past a short screen */
   h1, h2 { margin: 0; }
   .sky .name { margin: auto 0 var(--name-gap); } /* floats the name a gap above the button */
-  /* The wordmark: two identical SVGs share one grid cell. The base is faint and glows; the lit copy shows through the lamp gradient. */
+  /* The wordmark: two identical SVGs share one grid cell. The base is a faint ghost; the lit copy shows through the lamp gradient and glows where lit. */
   .name { display: grid; width: var(--name-width); }
   .name svg { grid-area: 1 / 1; display: block; width: 100%; height: auto; }
   .name-base use { stroke: var(--cyan); }
   .name-base { opacity: var(--name-base-opacity); filter: var(--name-glow); }
   .name-lit use { stroke: url(#lamp); }
   /* Hidden until the script first places the lamp, and again when the pointer leaves the window. */
-  .name-lit { opacity: 0; transition: opacity var(--lamp-fade-duration) var(--lamp-fade-easing); }
+  .name-lit { opacity: 0; filter: var(--name-lit-glow); transition: opacity var(--lamp-fade-duration) var(--lamp-fade-easing); }
   .lamp-on .name-lit { opacity: 1; }
   #lamp stop:first-child { stop-color: var(--white-light); stop-opacity: 1; }
   #lamp stop:last-child { stop-color: var(--white-light); stop-opacity: 0; }
