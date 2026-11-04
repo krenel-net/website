@@ -14,8 +14,10 @@
   :root {
     --page-inset: clamp(var(--space-6), 6vw, var(--space-12)); /* left and right margin */
     --name-width: min(100vw - 2 * var(--page-inset), 960px); /* the wordmark's width; its height follows from the viewBox */
-    --name-base-opacity: 0.35;      /* the unlit wordmark, faint */
-    --name-glow: drop-shadow(0 0 6px var(--cyan)) drop-shadow(0 0 18px var(--cyan)); /* static glow on the base wordmark */
+    --name-base-opacity: 0.1;       /* the unlit wordmark: a ghost a careful eye can still find */
+    --name-glow: drop-shadow(0 0 3px var(--cyan)) drop-shadow(0 0 9px var(--cyan)); /* static glow on the base wordmark, kept small to match the ghost */
+    --lamp-fade-duration: 300ms; /* the lit layer fading in under the pointer and out when it leaves */
+    --lamp-fade-easing: ease;
     --half-height: 50vh;     /* half the screen; dvh below follows a phone's moving address bar */
     --horizon-gap: var(--space-4); /* space between the GitHub button's bottom edge and the horizon */
     --horizon: calc(var(--half-height) + var(--github-size) / 2 + var(--horizon-gap)) 1fr; /* sky rows, floor rows: the sky ends a gap below the button's bottom edge, which puts the button's centre at mid-screen */
@@ -25,8 +27,9 @@
     --github-icon-size: 18px; /* half the button's diameter, so the mark sits centred with even room */
     --dependencies-text-size: 0.8125rem; /* the quiet Dependencies link */
     --dependencies-width: 480px; /* widest the Dependencies panel gets */
-    --bloom-drift: 48px;     /* must stay in px: the script reads it with parseFloat. How far the blooms may travel; the blooms layer reaches this far past every screen edge */
-    --bloom-drift-duration: 1200ms; /* a slow, soft drift */
+    --bloom-drift: 33vmin;   /* how far the blooms may travel, about a third of the screen; the blooms layer reaches this far past every screen edge */
+    --bloom-drift-duration: 1800ms; /* a slow, soft swing */
+    --amber-bloom-strength: 24%; /* the amber bloom's share of Grid's amber; the opal blooms are 10 to 12%, but amber reads dimmer on this dark page */
     --bloom-drift-easing: ease-out;
     /* Grid's reflection tokens (0.22, 2px, 45%) leave the mirror nearly invisible on this sparse page, so the floor's reflections are stronger. */
     --reflection-strong-opacity: 0.8;
@@ -53,6 +56,9 @@
   .name-base use { stroke: var(--cyan); }
   .name-base { opacity: var(--name-base-opacity); filter: var(--name-glow); }
   .name-lit use { stroke: url(#lamp); }
+  /* Hidden until the script first places the lamp, and again when the pointer leaves the window. */
+  .name-lit { opacity: 0; transition: opacity var(--lamp-fade-duration) var(--lamp-fade-easing); }
+  .lamp-on .name-lit { opacity: 1; }
   #lamp stop:first-child { stop-color: var(--white-light); stop-opacity: 1; }
   #lamp stop:last-child { stop-color: var(--white-light); stop-opacity: 0; }
   /* Reflections: what stands h above the horizon is mirrored h below it. They sit out of the flow so the Dependencies note keeps
@@ -79,14 +85,16 @@
       repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px var(--space-8));
     background-repeat: repeat, repeat;
   }
-  /* The same three blooms as .gd-opal, behind the page. The layer is larger than the screen by the drift on every side,
-     so sliding it never shows an edge. */
+  /* The same three blooms as .gd-opal, plus an amber one at the sky's lower left (the floor covers anything lower), behind the page. The layer is larger than the screen by
+     the drift on every side, so sliding it never shows an edge. Each centre is Grid's screen position (grid/bundle.css)
+     pushed in by the drift; radii are Grid's, in vw and vh because the layer is bigger than the screen. */
   .blooms {
     position: fixed; inset: calc(-1 * var(--bloom-drift)); z-index: -1; pointer-events: none;
     background-image:
-      radial-gradient(ellipse 55% 45% at 18% 12%, var(--opal-cyan), transparent 70%),
-      radial-gradient(ellipse 50% 55% at 82% 88%, var(--opal-pearl), transparent 70%),
-      radial-gradient(ellipse 40% 40% at 62% 42%, var(--opal-mint), transparent 70%);
+      radial-gradient(ellipse 55vw 45vh at calc(var(--bloom-drift) + 18vw) calc(var(--bloom-drift) + 12vh), var(--opal-cyan), transparent 70%),
+      radial-gradient(ellipse 50vw 55vh at calc(var(--bloom-drift) + 82vw) calc(var(--bloom-drift) + 88vh), var(--opal-pearl), transparent 70%),
+      radial-gradient(ellipse 40vw 40vh at calc(var(--bloom-drift) + 62vw) calc(var(--bloom-drift) + 42vh), var(--opal-mint), transparent 70%),
+      radial-gradient(ellipse 40vw 35vh at calc(var(--bloom-drift) + 14vw) calc(var(--bloom-drift) + 38vh), color-mix(in srgb, var(--amber) var(--amber-bloom-strength), transparent), transparent 70%);
     background-repeat: no-repeat;
     transition: transform var(--bloom-drift-duration) var(--bloom-drift-easing);
     will-change: transform;
@@ -150,8 +158,9 @@
       <svg class="name-base" viewBox="-29 -29 847.4 114" role="img" aria-label="KRENEL-NET"><use href="#wordmark"/></svg>
       <svg class="name-lit" viewBox="-29 -29 847.4 114" aria-hidden="true">
         <defs>
-          <!-- The lamp: lit area of the wordmark, radius 260 in viewBox units; starts at the centre -->
-          <radialGradient id="lamp" gradientUnits="userSpaceOnUse" cx="394.7" cy="28" r="260">
+          <!-- The lamp: lit area of the wordmark, radius 112 (twice the cap height of 56) in viewBox units, so it covers about two
+               letters. The script sets cx and cy; until then the lit layer is hidden. -->
+          <radialGradient id="lamp" gradientUnits="userSpaceOnUse" r="112">
             <stop offset="0"/><stop offset="1"/>
           </radialGradient>
         </defs>
@@ -182,7 +191,7 @@
         <dt class="gd-label">Hosting</dt>
         <dd>GitHub Pages serves this site. GitHub logs each visitor's IP address for security. <a href="https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages#data-collection">GitHub Pages data collection</a></dd>
         <dt class="gd-label">Cookies and scripts</dt>
-        <dd>This page sets no cookies. One short script in the page moves the glow with your pointer or your phone's tilt and sends nothing anywhere.</dd>
+        <dd>This page sets no cookies. One short script in the page moves the glow with your pointer or your phone's tilt and sends nothing anywhere. On iPhone, tapping the page asks for motion access, and the readings stay in the page.</dd>
       </dl>
     </section>
   </div>
@@ -190,56 +199,71 @@
 <script>
   const MAX_TILT_DEG = 30; // tilt from the resting angle that sends the virtual pointer to a screen edge
 
+  const root = document.documentElement;
   const lit = document.querySelector('.name-lit');
   const lamp = document.getElementById('lamp');
   const blooms = document.querySelector('.blooms');
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let drift, pointer, rest, queued = false;
+  let asked = false, gotReading = false; // iPhone motion permission: ask once, and never once readings flow
 
-  // Cache the drift distance; it changes only on resize. The name's rect is read fresh each frame, since scrolling moves it.
+  // Cache the drift distance; it changes only on resize. The blooms layer reaches that far past the screen's left edge.
+  // The name's rect is read fresh each frame, since scrolling moves it.
   function measure() {
-    drift = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bloom-drift'));
+    drift = -blooms.offsetLeft;
   }
+
+  const clamp = (v) => Math.max(-1, Math.min(1, v));
 
   function frame() {
     queued = false;
     const box = lit.getBoundingClientRect(); // one read per frame, before any write
-    // A tilt reading is an offset from the name's centre; a real pointer is already a screen position.
-    const x = pointer.fromName ? box.left + box.width / 2 + pointer.x : pointer.x;
-    const y = pointer.fromName ? box.top + box.height / 2 + pointer.y : pointer.y;
+    const { x, y } = pointer;
     const view = lit.viewBox.baseVal;
     const scale = view.width / box.width; // the SVG scales uniformly
     lamp.setAttribute('cx', view.x + (x - box.left) * scale);
     lamp.setAttribute('cy', view.y + (y - box.top) * scale);
     if (still) return;
-    const nx = (x / innerWidth) * 2 - 1;
-    const ny = (y / innerHeight) * 2 - 1;
+    const nx = clamp((x / innerWidth) * 2 - 1);
+    const ny = clamp((y / innerHeight) * 2 - 1);
     blooms.style.transform = `translate3d(${-nx * drift}px, ${-ny * drift}px, 0)`;
   }
 
-  function point(x, y, fromName = false) {
-    pointer = { x, y, fromName };
+  // Any pointer position, real or from tilt, places the lamp and shows the lit layer.
+  function point(x, y) {
+    pointer = { x, y };
+    root.classList.add('lamp-on');
     if (!queued) { queued = true; requestAnimationFrame(frame); }
   }
-
-  const clamp = (v) => Math.max(-1, Math.min(1, v));
 
   measure();
   addEventListener('resize', measure);
   addEventListener('pointermove', (e) => point(e.clientX, e.clientY), { passive: true });
+  root.addEventListener('pointerleave', () => root.classList.remove('lamp-on'));
 
-  // Phones: tilt acts as a pointer. The resting angle maps to the centre of the name, so the lamp starts under it;
-  // the blooms then drift a little at rest, which is fine. iOS sends nothing until permission is granted, so tilt stays off there;
-  // desktop Chrome sends one null reading, which the guard drops.
+  // Phones: tilt acts as a pointer. The resting angle maps to the screen centre, where the GitHub button is, so the name
+  // stays a ghost at rest; tilting the top of the phone away (beta falling) moves the light up onto it. Desktop Chrome sends
+  // one null reading, which the guard drops.
   addEventListener('deviceorientation', (e) => {
     if (e.beta === null || e.gamma === null) return;
+    gotReading = true;
     rest = rest || { beta: e.beta, gamma: e.gamma }; // the first reading is the resting angle
     point(
-      clamp((e.gamma - rest.gamma) / MAX_TILT_DEG) * innerWidth / 2,
-      clamp((e.beta - rest.beta) / MAX_TILT_DEG) * innerHeight / 2,
-      true
+      innerWidth / 2 + clamp((e.gamma - rest.gamma) / MAX_TILT_DEG) * innerWidth / 2,
+      innerHeight / 2 + clamp((e.beta - rest.beta) / MAX_TILT_DEG) * innerHeight / 2
     );
   }, { passive: true });
+
+  // iOS Safari sends no readings until requestPermission() is granted, and only inside a user gesture. The first touch tap
+  // asks, once, if the browser has that call and no reading has arrived (Android never needs it). Granted readings reach
+  // the listener above; a refusal changes nothing. Taps on links and buttons keep their own job.
+  addEventListener('pointerup', (e) => {
+    if (asked || gotReading || e.pointerType !== 'touch') return;
+    if (typeof DeviceOrientationEvent === 'undefined' || typeof DeviceOrientationEvent.requestPermission !== 'function') return;
+    if (e.target.closest('a, button')) return;
+    asked = true;
+    DeviceOrientationEvent.requestPermission().catch(() => {});
+  });
 </script>
 </body>
 </html>

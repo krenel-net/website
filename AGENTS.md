@@ -13,11 +13,12 @@ One-screen landing page for the krenel-net GitHub org, served by GitHub Pages at
 
 ## Done means
 
-`./check.sh` prints nothing, and in a browser at desktop and about 375px wide: Saira loaded, name centered, faint, brightens under the pointer; blooms drift away, no sideways scroll, reflection faint. The GitHub icon reaches the org. Dependencies opens, and closes with Esc, a click outside, or Close.
+`./check.sh` prints nothing, and in a browser at desktop and about 375px wide: Saira loaded, no sideways scroll. The GitHub icon is dead centre and reaches the org. The name is a barely visible ghost above it that lights up under the pointer. The blooms, including an amber one, swing away from the pointer. The name and the GitHub button each have a faint reflection below the horizon, and the name's reflection mirrors the lit letters. Dependencies opens, and closes with Esc, a click outside, or Close.
 
 ## Rules
 
 - The name is always KRENEL-NET, krenel-net or krenel.net, never the first word alone.
 - Dark theme only.
+- Gloss and reflections are key to the design; don't remove or flatten them without asking.
 - The Dependencies panel in `index.html` tells visitors which third parties see their requests (Google Fonts, GitHub Pages). Add, remove or self-host a third-party resource, and update that panel in the same change.
 - The DNS records at Cloudflare stay DNS-only (grey cloud) so GitHub can issue and renew the HTTPS certificate.
