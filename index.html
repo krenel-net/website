@@ -13,10 +13,9 @@
   /* Page-only sizes. Everything else is a Grid token (grid/tokens.css) or class (grid/bundle.css). */
   :root {
     --page-inset: clamp(var(--space-6), 6vw, var(--space-12)); /* left and right margin */
-    --name-size: clamp(28px, 11vw, 120px); /* keeps the name on one line from phone to desktop */
-    --name-weight: 200;      /* Grid's display style */
-    --name-tracking: 0.12em; /* Grid's display style */
-    --name-leading: 0.9;     /* as on Grid's Cover */
+    --name-width: min(100vw - 2 * var(--page-inset), 960px); /* the wordmark's width; its height follows from the viewBox */
+    --name-base-opacity: 0.35;      /* the unlit wordmark, faint */
+    --name-glow: drop-shadow(0 0 6px var(--cyan)) drop-shadow(0 0 18px var(--cyan)); /* static glow on the base wordmark */
     --horizon: 3fr 2fr;      /* sky above the horizon, floor below */
     --floor-bottom: var(--space-6); /* space under the Dependencies button; the open panel's bottom edge sits on the same line */
     --dependencies-width: 480px; /* widest the Dependencies panel gets */
@@ -25,10 +24,19 @@
   /* The name stands on the horizon; the floor below holds its reflection, the button and the Dependencies note. */
   .stage { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: var(--horizon); }
   .sky, .floor { padding-inline: var(--page-inset); }
-  .sky { display: flex; align-items: flex-end; }
-  .floor { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-8); padding-bottom: var(--floor-bottom); }
+  .sky { display: flex; align-items: flex-end; justify-content: center; }
+  .floor { display: flex; flex-direction: column; align-items: center; gap: var(--space-8); padding-bottom: var(--floor-bottom); }
   h1, h2 { margin: 0; }
-  .name { font-family: var(--font-display); font-size: var(--name-size); font-weight: var(--name-weight); letter-spacing: var(--name-tracking); line-height: var(--name-leading); white-space: nowrap; }
+  /* The wordmark: two identical SVGs share one grid cell. The base is faint and glows; the lit copy shows through the lamp gradient. */
+  .name { display: grid; width: var(--name-width); }
+  .name svg { grid-area: 1 / 1; display: block; width: 100%; height: auto; }
+  .name-base use, .reflection-art use { stroke: var(--cyan); }
+  .name-base, .reflection-art { opacity: var(--name-base-opacity); filter: var(--name-glow); }
+  .name-lit use { stroke: url(#lamp); }
+  #lamp stop:first-child { stop-color: var(--white-light); stop-opacity: 1; }
+  #lamp stop:last-child { stop-color: var(--white-light); stop-opacity: 0; }
+  .gd-reflection-copy { width: var(--name-width); }
+  .reflection-art { display: block; width: 100%; height: auto; }
   a.gd-btn { text-decoration: none; }
 
   /* Grid's README: the reflection's fade is clear at the floor and opaque by reflection-fade of the copy's height.
@@ -53,12 +61,47 @@
 </style>
 </head>
 <body class="gd-opal">
+<!-- The wordmark, one centre-line path per letter, one stroke width, flat ends, rounded corners. The letter origin is
+     baked into each path's x: the lamp gradient is in user space, so letters must not be moved with x or transform.
+     Named constants (user units): stroke S=10, corner radius R=14 (more than S/2, so inner corners round too),
+     cap height H=56 (y 0..56), glyph width W=64 (hyphen 40), gap between letters G=14, advance = W + S + G = 88.
+     Letter origins x: K0 R88 E176 N264 E352 L440 -528 N592 E680 T768; the last letter ends at x=832.
+     viewBox = -24 -24 880 104: the drawing plus 24 of room all round (S/2 stroke + glow). Its centre is (416, 28). -->
+<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+  <defs>
+    <g id="wordmark" fill="none" stroke-width="10" stroke-linecap="butt" stroke-linejoin="round">
+      <path d="M0 0V56M0 28H21M64 0L26 24Q20 28 26 32L64 56"/>
+      <path d="M88 56V0H137A15 15 0 0 1 137 30H88M118 30L144 56"/>
+      <path d="M240 0H190A14 14 0 0 0 176 14V42A14 14 0 0 0 190 56H240M176 28H228"/>
+      <path d="M264 56V26C264 -7 280 -7 290 14L302 42C312 63 328 63 328 30V0"/>
+      <path d="M416 0H366A14 14 0 0 0 352 14V42A14 14 0 0 0 366 56H416M352 28H404"/>
+      <path d="M440 0V42A14 14 0 0 0 454 56H504"/>
+      <path d="M528 28H568"/>
+      <path d="M592 56V26C592 -7 608 -7 618 14L630 42C640 63 656 63 656 30V0"/>
+      <path d="M744 0H694A14 14 0 0 0 680 14V42A14 14 0 0 0 694 56H744M680 28H732"/>
+      <path d="M768 0H832M800 0V56"/>
+    </g>
+  </defs>
+</svg>
 <main class="stage">
   <div class="sky">
-    <h1 class="name">KRENEL-NET</h1>
+    <h1 class="name">
+      <svg class="name-base" viewBox="-24 -24 880 104" role="img" aria-label="KRENEL-NET"><use href="#wordmark"/></svg>
+      <svg class="name-lit" viewBox="-24 -24 880 104" aria-hidden="true">
+        <defs>
+          <!-- The lamp: lit area of the wordmark, radius 260 in viewBox units; starts at the centre -->
+          <radialGradient id="lamp" gradientUnits="userSpaceOnUse" cx="416" cy="28" r="260">
+            <stop offset="0"/><stop offset="1"/>
+          </radialGradient>
+        </defs>
+        <use href="#wordmark"/>
+      </svg>
+    </h1>
   </div>
   <div class="gd-floor floor">
-    <div class="name gd-reflection-copy" aria-hidden="true">KRENEL-NET</div>
+    <div class="gd-reflection-copy" aria-hidden="true">
+      <svg class="reflection-art" viewBox="-24 -24 880 104"><use href="#wordmark"/></svg>
+    </div>
     <a class="gd-btn gd-btn-primary" href="https://github.com/krenel-net">Open GitHub</a>
     <button class="gd-btn gd-btn-ghost dependencies-open" popovertarget="dependencies">Dependencies</button>
     <section id="dependencies" class="gd-panel dependencies" popover aria-labelledby="dependencies-title">
