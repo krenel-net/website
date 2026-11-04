@@ -19,12 +19,14 @@
     --horizon: 3fr 2fr;      /* sky above the horizon, floor below */
     --floor-bottom: var(--space-6); /* space under the Dependencies button; the open panel's bottom edge sits on the same line */
     --github-size: 36px;     /* the GitHub button's diameter: Grid's button height */
-    --github-icon-size: 18px;
+    --github-icon-size: 18px; /* half the button's diameter, so the mark sits centred with even room */
     --dependencies-text-size: 0.8125rem; /* the quiet Dependencies link */
     --dependencies-width: 480px; /* widest the Dependencies panel gets */
-    --bloom-drift: 48px;     /* how far the blooms may travel; the blooms layer reaches this far past every screen edge */
+    --bloom-drift: 48px;     /* must stay in px: the script reads it with parseFloat. How far the blooms may travel; the blooms layer reaches this far past every screen edge */
     --bloom-drift-duration: 1200ms; /* a slow, soft drift */
     --bloom-drift-easing: ease-out;
+    --link-fade-duration: 160ms; /* Grid's button timing */
+    --link-fade-easing: ease;
   }
 
   /* The name stands on the horizon; the floor below holds its reflection, the button and the Dependencies note. */
@@ -81,7 +83,7 @@
   .dependencies-open {
     margin-top: auto; align-self: flex-end; padding: 0; border: 0; background: none; box-shadow: none;
     font-family: var(--font-sans); font-size: var(--dependencies-text-size); cursor: pointer;
-    color: var(--ink-muted); transition: color 150ms;
+    color: var(--ink-muted); transition: color var(--link-fade-duration) var(--link-fade-easing);
   }
   .dependencies-open:hover { color: var(--cyan); }
   .dependencies-open:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
@@ -102,8 +104,8 @@
 <div class="blooms" aria-hidden="true"></div>
 <!-- The wordmark, one centre-line path per letter, one stroke width, flat ends, rounded corners. The letter origin is
      baked into each path's x: the lamp gradient is in user space, so letters must not be moved with x or transform.
-     Named constants (user units): stroke S=10; corner radius R=14 on every corner (above S/2, so inner corners round too;
-     R's bowl 15, the K vertex 14, N's arches stay above 11); cap height H=56 (y 0..56); glyph width W=64 (hyphen 40).
+     Named constants (user units): stroke S=10; corner radius R=14 by default (above S/2, so inner corners round too;
+     exceptions: R's bowl 15, the K vertex 14, N's arches stay above 11); cap height H=56 (y 0..56); glyph width W=64 (hyphen 40).
      Spacing: G=14 is the ink gap, the distance between the ink edges of neighbouring letters (stroke included). Each
      origin = previous ink right + G - this letter's ink left. Ink x relative to origin: K -5..66.4 (slanted arm tips),
      R -5..69, E -5..64, N -5..69, L -5..64, hyphen 0..40, T 0..64 (flat ends stop at the path end).
@@ -173,28 +175,31 @@
   const lamp = document.getElementById('lamp');
   const blooms = document.querySelector('.blooms');
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let box, drift, pointer, rest, queued = false;
+  let drift, pointer, rest, queued = false;
 
-  // Cache what the frame needs; the page size changes only on resize.
+  // Cache the drift distance; it changes only on resize. The name's rect is read fresh each frame, since scrolling moves it.
   function measure() {
-    box = lit.getBoundingClientRect();
     drift = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bloom-drift'));
   }
 
   function frame() {
     queued = false;
+    const box = lit.getBoundingClientRect(); // one read per frame, before any write
+    // A tilt reading is an offset from the name's centre; a real pointer is already a screen position.
+    const x = pointer.fromName ? box.left + box.width / 2 + pointer.x : pointer.x;
+    const y = pointer.fromName ? box.top + box.height / 2 + pointer.y : pointer.y;
     const view = lit.viewBox.baseVal;
     const scale = view.width / box.width; // the SVG scales uniformly
-    lamp.setAttribute('cx', view.x + (pointer.x - box.left) * scale);
-    lamp.setAttribute('cy', view.y + (pointer.y - box.top) * scale);
+    lamp.setAttribute('cx', view.x + (x - box.left) * scale);
+    lamp.setAttribute('cy', view.y + (y - box.top) * scale);
     if (still) return;
-    const nx = (pointer.x / innerWidth) * 2 - 1;
-    const ny = (pointer.y / innerHeight) * 2 - 1;
+    const nx = (x / innerWidth) * 2 - 1;
+    const ny = (y / innerHeight) * 2 - 1;
     blooms.style.transform = `translate3d(${-nx * drift}px, ${-ny * drift}px, 0)`;
   }
 
-  function point(x, y) {
-    pointer = { x, y };
+  function point(x, y, fromName = false) {
+    pointer = { x, y, fromName };
     if (!queued) { queued = true; requestAnimationFrame(frame); }
   }
 
@@ -204,14 +209,16 @@
   addEventListener('resize', measure);
   addEventListener('pointermove', (e) => point(e.clientX, e.clientY), { passive: true });
 
-  // Phones: tilt acts as a pointer. iOS sends nothing until permission is granted, so tilt stays off there;
+  // Phones: tilt acts as a pointer. The resting angle maps to the centre of the name, so the lamp starts under it;
+  // the blooms then drift a little at rest, which is fine. iOS sends nothing until permission is granted, so tilt stays off there;
   // desktop Chrome sends one null reading, which the guard drops.
   addEventListener('deviceorientation', (e) => {
     if (e.beta === null || e.gamma === null) return;
     rest = rest || { beta: e.beta, gamma: e.gamma }; // the first reading is the resting angle
     point(
-      innerWidth * (1 + clamp((e.gamma - rest.gamma) / MAX_TILT_DEG)) / 2,
-      innerHeight * (1 + clamp((e.beta - rest.beta) / MAX_TILT_DEG)) / 2
+      clamp((e.gamma - rest.gamma) / MAX_TILT_DEG) * innerWidth / 2,
+      clamp((e.beta - rest.beta) / MAX_TILT_DEG) * innerHeight / 2,
+      true
     );
   }, { passive: true });
 </script>
