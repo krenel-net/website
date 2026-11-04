@@ -18,6 +18,9 @@
     --name-glow: drop-shadow(0 0 6px var(--cyan)) drop-shadow(0 0 18px var(--cyan)); /* static glow on the base wordmark */
     --horizon: 3fr 2fr;      /* sky above the horizon, floor below */
     --floor-bottom: var(--space-6); /* space under the Dependencies button; the open panel's bottom edge sits on the same line */
+    --github-size: 36px;     /* the GitHub button's diameter: Grid's button height */
+    --github-icon-size: 18px;
+    --dependencies-text-size: 0.8125rem; /* the quiet Dependencies link */
     --dependencies-width: 480px; /* widest the Dependencies panel gets */
     --bloom-drift: 48px;     /* how far the blooms may travel; the blooms layer reaches this far past every screen edge */
     --bloom-drift-duration: 1200ms; /* a slow, soft drift */
@@ -41,6 +44,9 @@
   .gd-reflection-copy { width: var(--name-width); }
   .reflection-art { display: block; width: 100%; height: auto; }
   a.gd-btn { text-decoration: none; }
+  /* The GitHub button: Grid's primary button as a circle around the icon. */
+  .github { width: var(--github-size); padding: 0; justify-content: center; border-radius: 50%; }
+  .github svg { width: var(--github-icon-size); height: var(--github-icon-size); }
 
   /* Grid's README: the reflection's fade is clear at the floor and opaque by reflection-fade of the copy's height.
      grid/bundle.css measures it from the far end, which leaves the name legible.
@@ -70,9 +76,15 @@
   }
   @media (prefers-reduced-motion: reduce) { .blooms { transition: none; } }
 
-  /* Dependencies: a quiet ghost button in the floor's corner opens a panel over it. It is a native popover,
+  /* Dependencies: quiet text in the floor's corner opens a panel over it. It is a native popover,
      so Esc, a click outside or Close dismisses it with no script. */
-  .dependencies-open { margin-top: auto; align-self: flex-end; color: var(--ink-muted); }
+  .dependencies-open {
+    margin-top: auto; align-self: flex-end; padding: 0; border: 0; background: none; box-shadow: none;
+    font-family: var(--font-sans); font-size: var(--dependencies-text-size); cursor: pointer;
+    color: var(--ink-muted); transition: color 150ms;
+  }
+  .dependencies-open:hover { color: var(--cyan); }
+  .dependencies-open:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   .dependencies:popover-open {
     position: fixed; inset: auto var(--page-inset) var(--floor-bottom) auto; margin: 0; box-sizing: border-box;
     width: min(var(--dependencies-width), calc(100vw - 2 * var(--page-inset)));
@@ -134,8 +146,10 @@
     <div class="gd-reflection-copy" aria-hidden="true">
       <svg class="reflection-art" viewBox="-29 -29 847.4 114"><use href="#wordmark"/></svg>
     </div>
-    <a class="gd-btn gd-btn-primary" href="https://github.com/krenel-net">Open GitHub</a>
-    <button class="gd-btn gd-btn-ghost dependencies-open" popovertarget="dependencies">Dependencies</button>
+    <a class="gd-btn gd-btn-primary github" href="https://github.com/krenel-net" aria-label="krenel-net on GitHub">
+      <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+    </a>
+    <button class="dependencies-open" popovertarget="dependencies">Dependencies</button>
     <section id="dependencies" class="gd-panel dependencies" popover aria-labelledby="dependencies-title">
       <div class="gd-panel-head">
         <h2 id="dependencies-title" class="gd-panel-title">Dependencies</h2>
