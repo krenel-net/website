@@ -63,34 +63,39 @@
 <body class="gd-opal">
 <!-- The wordmark, one centre-line path per letter, one stroke width, flat ends, rounded corners. The letter origin is
      baked into each path's x: the lamp gradient is in user space, so letters must not be moved with x or transform.
-     Named constants (user units): stroke S=10, corner radius R=14 (more than S/2, so inner corners round too),
-     cap height H=56 (y 0..56), glyph width W=64 (hyphen 40), gap between letters G=14, advance = W + S + G = 88.
-     Letter origins x: K0 R88 E176 N264 E352 L440 -528 N592 E680 T768; the last letter ends at x=832.
-     viewBox = -24 -24 880 104: the drawing plus 24 of room all round (S/2 stroke + glow). Its centre is (416, 28). -->
+     Named constants (user units): stroke S=10; corner radius R=14 on every corner (above S/2, so inner corners round too;
+     R's bowl 15, the K vertex 14, N's arches stay above 11); cap height H=56 (y 0..56); glyph width W=64 (hyphen 40).
+     Spacing: G=14 is the ink gap, the distance between the ink edges of neighbouring letters (stroke included). Each
+     origin = previous ink right + G - this letter's ink left. Ink x relative to origin: K -5..66.4 (slanted arm tips),
+     R -5..69, E -5..64, N -5..69, L -5..64, hyphen 0..40, T 0..64 (flat ends stop at the path end).
+     K vertex: arms meet at (14,28), rounded by an R=14 arc whose tangent points are (35.8,15.8) and (35.8,40.2).
+     N arches: cubic C0 -5 24 -5 28 12 from (0,22); the diagonal and lower arch mirror it about the glyph centre (32,28).
+     Letter origins x: K0 R85.4 E173.4 N256.4 E344.4 L427.4 -505.4 N564.4 E652.4 T730.4; the last ink ends at x=794.4.
+     viewBox = -29 -29 847.4 114: the ink plus 24 of room all round (glow). Its centre is (394.7, 28). -->
 <svg width="0" height="0" aria-hidden="true" style="position:absolute">
   <defs>
     <g id="wordmark" fill="none" stroke-width="10" stroke-linecap="butt" stroke-linejoin="round">
-      <path d="M0 0V56M0 28H21M64 0L26 24Q20 28 26 32L64 56"/>
-      <path d="M88 56V0H137A15 15 0 0 1 137 30H88M118 30L144 56"/>
-      <path d="M240 0H190A14 14 0 0 0 176 14V42A14 14 0 0 0 190 56H240M176 28H228"/>
-      <path d="M264 56V26C264 -7 280 -7 290 14L302 42C312 63 328 63 328 30V0"/>
-      <path d="M416 0H366A14 14 0 0 0 352 14V42A14 14 0 0 0 366 56H416M352 28H404"/>
-      <path d="M440 0V42A14 14 0 0 0 454 56H504"/>
-      <path d="M528 28H568"/>
-      <path d="M592 56V26C592 -7 608 -7 618 14L630 42C640 63 656 63 656 30V0"/>
-      <path d="M744 0H694A14 14 0 0 0 680 14V42A14 14 0 0 0 694 56H744M680 28H732"/>
-      <path d="M768 0H832M800 0V56"/>
+      <path d="M0 0V56M0 28H28.7M64 0L35.8 15.8A14 14 0 0 0 35.8 40.2L64 56"/>
+      <path d="M85.4 56V14A14 14 0 0 1 99.4 0H134.4A15 15 0 0 1 134.4 30H85.4M115.4 30L141.4 56"/>
+      <path d="M237.4 0H187.4A14 14 0 0 0 173.4 14V42A14 14 0 0 0 187.4 56H237.4M173.4 28H225.4"/>
+      <path d="M256.4 56V22C256.4 -5 280.4 -5 284.4 12L292.4 44C296.4 61 320.4 61 320.4 34V0"/>
+      <path d="M408.4 0H358.4A14 14 0 0 0 344.4 14V42A14 14 0 0 0 358.4 56H408.4M344.4 28H396.4"/>
+      <path d="M427.4 0V42A14 14 0 0 0 441.4 56H491.4"/>
+      <path d="M505.4 28H545.4"/>
+      <path d="M564.4 56V22C564.4 -5 588.4 -5 592.4 12L600.4 44C604.4 61 628.4 61 628.4 34V0"/>
+      <path d="M716.4 0H666.4A14 14 0 0 0 652.4 14V42A14 14 0 0 0 666.4 56H716.4M652.4 28H704.4"/>
+      <path d="M730.4 0H794.4M762.4 0V56"/>
     </g>
   </defs>
 </svg>
 <main class="stage">
   <div class="sky">
     <h1 class="name">
-      <svg class="name-base" viewBox="-24 -24 880 104" role="img" aria-label="KRENEL-NET"><use href="#wordmark"/></svg>
-      <svg class="name-lit" viewBox="-24 -24 880 104" aria-hidden="true">
+      <svg class="name-base" viewBox="-29 -29 847.4 114" role="img" aria-label="KRENEL-NET"><use href="#wordmark"/></svg>
+      <svg class="name-lit" viewBox="-29 -29 847.4 114" aria-hidden="true">
         <defs>
           <!-- The lamp: lit area of the wordmark, radius 260 in viewBox units; starts at the centre -->
-          <radialGradient id="lamp" gradientUnits="userSpaceOnUse" cx="416" cy="28" r="260">
+          <radialGradient id="lamp" gradientUnits="userSpaceOnUse" cx="394.7" cy="28" r="260">
             <stop offset="0"/><stop offset="1"/>
           </radialGradient>
         </defs>
@@ -100,7 +105,7 @@
   </div>
   <div class="gd-floor floor">
     <div class="gd-reflection-copy" aria-hidden="true">
-      <svg class="reflection-art" viewBox="-24 -24 880 104"><use href="#wordmark"/></svg>
+      <svg class="reflection-art" viewBox="-29 -29 847.4 114"><use href="#wordmark"/></svg>
     </div>
     <a class="gd-btn gd-btn-primary" href="https://github.com/krenel-net">Open GitHub</a>
     <button class="gd-btn gd-btn-ghost dependencies-open" popovertarget="dependencies">Dependencies</button>
