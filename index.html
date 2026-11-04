@@ -68,6 +68,7 @@
     transition: transform var(--bloom-drift-duration) var(--bloom-drift-easing);
     will-change: transform;
   }
+  @media (prefers-reduced-motion: reduce) { .blooms { transition: none; } }
 
   /* Dependencies: a quiet ghost button in the floor's corner opens a panel over it. It is a native popover,
      so Esc, a click outside or Close dismisses it with no script. */
@@ -146,10 +147,60 @@
         <dt class="gd-label">Hosting</dt>
         <dd>GitHub Pages serves this site. GitHub logs each visitor's IP address for security. <a href="https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages#data-collection">GitHub Pages data collection</a></dd>
         <dt class="gd-label">Cookies and scripts</dt>
-        <dd>None. This page sets no cookies and runs no scripts.</dd>
+        <dd>This page sets no cookies. One short script in the page moves the glow with your pointer or your phone's tilt and sends nothing anywhere.</dd>
       </dl>
     </section>
   </div>
 </main>
+<script>
+  const MAX_TILT_DEG = 30; // tilt from the resting angle that sends the virtual pointer to a screen edge
+
+  const lit = document.querySelector('.name-lit');
+  const lamp = document.getElementById('lamp');
+  const blooms = document.querySelector('.blooms');
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let box, drift, pointer, rest, queued = false;
+
+  // Cache what the frame needs; the page size changes only on resize.
+  function measure() {
+    box = lit.getBoundingClientRect();
+    drift = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--bloom-drift'));
+  }
+
+  function frame() {
+    queued = false;
+    const view = lit.viewBox.baseVal;
+    const scale = view.width / box.width; // the SVG scales uniformly
+    lamp.setAttribute('cx', view.x + (pointer.x - box.left) * scale);
+    lamp.setAttribute('cy', view.y + (pointer.y - box.top) * scale);
+    if (still) return;
+    const nx = (pointer.x / innerWidth) * 2 - 1;
+    const ny = (pointer.y / innerHeight) * 2 - 1;
+    blooms.style.transform = `translate3d(${-nx * drift}px, ${-ny * drift}px, 0)`;
+  }
+
+  function point(x, y) {
+    pointer = { x, y };
+    if (!queued) { queued = true; requestAnimationFrame(frame); }
+  }
+
+  const clamp = (v) => Math.max(-1, Math.min(1, v));
+
+  measure();
+  addEventListener('resize', measure);
+  addEventListener('pointermove', (e) => point(e.clientX, e.clientY), { passive: true });
+
+  // Phones: tilt acts as a pointer. iOS asks permission for this, so it is skipped there.
+  if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission !== 'function') {
+    addEventListener('deviceorientation', (e) => {
+      if (e.beta === null || e.gamma === null) return;
+      rest = rest || { beta: e.beta, gamma: e.gamma }; // the first reading is the resting angle
+      point(
+        innerWidth * (1 + clamp((e.gamma - rest.gamma) / MAX_TILT_DEG)) / 2,
+        innerHeight * (1 + clamp((e.beta - rest.beta) / MAX_TILT_DEG)) / 2
+      );
+    }, { passive: true });
+  }
+</script>
 </body>
 </html>

@@ -13,7 +13,7 @@ One-screen landing page for the krenel-net GitHub org, served by GitHub Pages at
 
 ## Done means
 
-`./check.sh` prints nothing, and in a browser at desktop and about 375px wide: Saira loaded, KRENEL-NET on one line, no sideways scroll, reflection faint. Open GitHub reaches the org. Dependencies opens, and closes with Esc, a click outside, or Close.
+`./check.sh` prints nothing, and in a browser at desktop and about 375px wide: Saira loaded, name centered, faint, brightens under the pointer; blooms drift away, no sideways scroll, reflection faint. the GitHub icon reaches the org. Dependencies opens, and closes with Esc, a click outside, or Close.
 
 ## Rules
 
