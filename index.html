@@ -190,17 +190,16 @@
   addEventListener('resize', measure);
   addEventListener('pointermove', (e) => point(e.clientX, e.clientY), { passive: true });
 
-  // Phones: tilt acts as a pointer. iOS asks permission for this, so it is skipped there.
-  if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission !== 'function') {
-    addEventListener('deviceorientation', (e) => {
-      if (e.beta === null || e.gamma === null) return;
-      rest = rest || { beta: e.beta, gamma: e.gamma }; // the first reading is the resting angle
-      point(
-        innerWidth * (1 + clamp((e.gamma - rest.gamma) / MAX_TILT_DEG)) / 2,
-        innerHeight * (1 + clamp((e.beta - rest.beta) / MAX_TILT_DEG)) / 2
-      );
-    }, { passive: true });
-  }
+  // Phones: tilt acts as a pointer. iOS sends nothing until permission is granted, so tilt stays off there;
+  // desktop Chrome sends one null reading, which the guard drops.
+  addEventListener('deviceorientation', (e) => {
+    if (e.beta === null || e.gamma === null) return;
+    rest = rest || { beta: e.beta, gamma: e.gamma }; // the first reading is the resting angle
+    point(
+      innerWidth * (1 + clamp((e.gamma - rest.gamma) / MAX_TILT_DEG)) / 2,
+      innerHeight * (1 + clamp((e.beta - rest.beta) / MAX_TILT_DEG)) / 2
+    );
+  }, { passive: true });
 </script>
 </body>
 </html>
