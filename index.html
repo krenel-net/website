@@ -14,8 +14,8 @@
   :root {
     --page-inset: clamp(var(--space-6), 6vw, var(--space-12)); /* left and right margin */
     --name-width: min(100vw - 2 * var(--page-inset), 960px); /* the wordmark's width; its height follows from the viewBox */
-    --name-base-opacity: 0.05;      /* the unlit wordmark: a ghost a careful eye can still find */
-    --name-glow: drop-shadow(0 0 3px var(--cyan)) drop-shadow(0 0 9px var(--cyan)); /* static glow on the base wordmark, kept small to match the ghost */
+    --name-base-opacity: 0.03;      /* the unlit wordmark: a ghost a careful eye can still find */
+    --name-glow: drop-shadow(0 0 4px var(--cyan)); /* static glow on the base wordmark: one small shadow, so the ghost has no hard edge */
     --lamp-fade-duration: 300ms; /* the lit layer fading in under the pointer and out when it leaves */
     --lamp-fade-easing: ease;
     --half-height: 50vh;     /* half the screen; dvh below follows a phone's moving address bar */
@@ -207,7 +207,7 @@
   const blooms = document.querySelector('.blooms');
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let drift, pointer, rest, queued = false;
-  let asked = false, gotReading = false; // iPhone motion permission: ask once, and never once readings flow
+  let asked = false, asking = false, gotReading = false; // iPhone motion permission: ask until answered, never once readings flow
 
   // Cache the drift distance; it changes only on resize. The blooms layer reaches that far past the screen's left edge.
   // The name's rect is read fresh each frame, since scrolling moves it.
@@ -256,20 +256,23 @@
     const away = rest.beta - e.beta; // positive when the top tilts away
     point(
       innerWidth / 2 + clamp((e.gamma - rest.gamma) / MAX_TILT_DEG) * innerWidth / 2,
-      innerHeight / 2 + Math.max(0, -away / MAX_TILT_DEG) * innerHeight / 2,
-      clamp(away / TILT_TO_NAME_DEG)
+      innerHeight / 2 + Math.min(1, Math.max(0, -away / MAX_TILT_DEG)) * innerHeight / 2,
+      Math.max(0, clamp(away / TILT_TO_NAME_DEG))
     );
   }, { passive: true });
 
-  // iOS Safari sends no readings until requestPermission() is granted, and only inside a user gesture. The first tap
-  // (touchend, which only touch fires) asks, once, if the browser has that call and no reading has arrived (Android never needs it). Granted readings reach
-  // the listener above; a refusal changes nothing. Taps on links and buttons keep their own job.
+  // iOS Safari sends no readings until requestPermission() is granted, and only inside a user gesture. A tap (touchend,
+  // which only touch fires) asks if the browser has that call and no reading has arrived (Android never needs it).
+  // Granted readings reach the listener above. Once answered, even 'denied', it never asks again; a rejection
+  // (not a gesture, say) lets the next tap retry. Taps on links and buttons keep their own job.
   addEventListener('touchend', (e) => {
-    if (asked || gotReading) return;
+    if (asked || asking || gotReading) return;
     if (typeof DeviceOrientationEvent === 'undefined' || typeof DeviceOrientationEvent.requestPermission !== 'function') return;
     if (e.target.closest('a, button')) return;
-    asked = true;
-    DeviceOrientationEvent.requestPermission().catch(() => {});
+    asking = true;
+    DeviceOrientationEvent.requestPermission()
+      .then(() => { asked = true; }, () => {})
+      .finally(() => { asking = false; });
   });
 </script>
 </body>
