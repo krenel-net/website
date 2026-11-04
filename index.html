@@ -28,6 +28,11 @@
     --bloom-drift: 48px;     /* must stay in px: the script reads it with parseFloat. How far the blooms may travel; the blooms layer reaches this far past every screen edge */
     --bloom-drift-duration: 1200ms; /* a slow, soft drift */
     --bloom-drift-easing: ease-out;
+    /* Grid's reflection tokens (0.22, 2px, 45%) leave the mirror nearly invisible on this sparse page, so the floor's reflections are stronger. */
+    --reflection-strong-opacity: 0.8;
+    --reflection-strong-blur: 1px;
+    --reflection-strong-fade: 100%; /* how far down the copy the fade reaches full cover */
+    --reflection-glow-room: 48px; /* how far the fade's cover reaches past the copy, so the glow never ends at a visible edge */
     --link-fade-duration: 160ms; /* Grid's button timing */
     --link-fade-easing: ease;
   }
@@ -52,13 +57,14 @@
   #lamp stop:last-child { stop-color: var(--white-light); stop-opacity: 0; }
   /* Reflections: what stands h above the horizon is mirrored h below it. They sit out of the flow so the Dependencies note keeps
      the floor's corner. The name's reflection holds both layers, so the lamp lights the mirrored letters too. */
-  .floor .gd-reflection-copy { position: absolute; inset-inline: 0; margin: 0 auto; }
+  .floor .gd-reflection-copy { position: absolute; inset-inline: 0; margin: 0 auto; opacity: var(--reflection-strong-opacity); filter: blur(var(--reflection-strong-blur)); }
   .github-reflection { top: var(--horizon-gap); }
   .name-reflection { top: calc(var(--horizon-gap) + var(--github-size) + var(--name-gap)); }
   /* Grid's README: the reflection's fade is clear at the floor and opaque by reflection-fade of the copy's height.
      grid/bundle.css measures it from the far end, which leaves the name legible.
-     This restores the README's fade; drop it once bundle.css is fixed in the artifact. */
-  .gd-reflection-copy::after { background: linear-gradient(0deg, transparent, var(--surface) var(--reflection-fade)); }
+     This restores the README's fade; drop it once bundle.css is fixed in the artifact. The cover also reaches past the copy,
+     so the glow, which spills outside it, is faded too and shows no box edge. */
+  .gd-reflection-copy::after { inset: calc(-1 * var(--reflection-glow-room)); background: linear-gradient(0deg, transparent, var(--surface) var(--reflection-strong-fade)); }
   a.gd-btn { text-decoration: none; }
   /* The GitHub button: Grid's primary button as a circle around the icon. */
   .github { box-sizing: border-box; width: var(--github-size); height: var(--github-size); padding: 0; justify-content: center; border-radius: 50%; }
