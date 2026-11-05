@@ -14,7 +14,7 @@
   :root {
     --page-inset: clamp(var(--space-6), 6vw, var(--space-12)); /* left and right margin */
     --name-width: min(100vw - 2 * var(--page-inset), 960px, (var(--half-height) - var(--github-size) / 2 - var(--name-gap) - var(--dependencies-top) - var(--dependencies-line-height)) * var(--name-aspect)); /* the wordmark's width: the screen's width, 960px, or on a short screen what fits under the Dependencies link; its height follows from the viewBox */
-    --name-aspect: 7.43;     /* the wordmark's viewBox width over its height (847.4 / 114) */
+    --name-aspect: calc(847.4 / 114);     /* the wordmark's viewBox width over its height (847.4 / 114) */
     --name-base-opacity: 0.03;      /* the unlit wordmark: a ghost a careful eye can still find */
     --name-glow: drop-shadow(0 0 4px var(--cyan)); /* static glow on the base wordmark: one small shadow, so the ghost has no hard edge */
     --name-lit-glow: drop-shadow(0 0 6px var(--cyan)) drop-shadow(0 0 18px var(--cyan)); /* glow on the lit letters; it shines only where the lamp lights the stroke */
@@ -56,7 +56,7 @@
   .sky { position: relative; display: flex; flex-direction: column; align-items: center; padding-bottom: var(--horizon-gap); }
   /* The floor is opaque near-black gloss (Grid's darkest fill with a thin highlight at the horizon), so the body's grid lines and
      the sky's blooms do not show through. The sky's blooms are reflected in it by .floor-blooms instead. */
-  .floor { position: relative; overflow: hidden; background: linear-gradient(180deg, var(--gloss-low), transparent var(--floor-sheen-depth)), var(--surface-sunken); } /* clips a reflection that runs past a short screen */
+  .floor { position: relative; overflow: hidden; background: linear-gradient(180deg, var(--gloss-low), transparent var(--floor-sheen-depth)), var(--surface-sunken); } /* clips a reflection that runs past a short screen; also keeps .floor-blooms and the reflection wrappers' glow room from showing above the horizon */
   h1, h2 { margin: 0; }
   .sky .name { margin: auto 0 var(--name-gap); } /* floats the name a gap above the button */
   /* The wordmark: two identical SVGs share one grid cell. The base is a faint ghost; the lit copy shows through the lamp gradient and glows where lit. */
@@ -90,7 +90,7 @@
   /* The reflected button shows the real button's hover, keyboard focus and press: Grid's own colour, glow, ring and fill
      (grid/bundle.css), applied to the copy through the shared .stage. The copy has the same Grid classes, so it fades at the
      same pace. The reflection takes no pointer events, so only the real button can trigger these. */
-  .stage:has(.sky .github:hover, .sky .github:active) .github-reflection .github { color: var(--white-light); box-shadow: var(--gloss), var(--glow-cyan-strong); }
+  .stage:has(.sky .github:hover, .sky .github:active) .github-reflection .github { border-color: var(--line-lit); color: var(--white-light); box-shadow: var(--gloss), var(--glow-cyan-strong); }
   .stage:has(.sky .github:focus-visible) .github-reflection .github { box-shadow: var(--focus-ring); }
   .stage:has(.sky .github:active) .github-reflection .github { background-color: var(--cyan-soft); }
 
