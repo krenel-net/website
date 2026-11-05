@@ -35,8 +35,8 @@
     /* Stronger than Grid's defaults in grid/tokens.css, which leave the mirror nearly invisible on this sparse page. */
     --reflection-strong-opacity: 0.8;
     --reflection-strong-blur: 1px;
-    --reflection-strong-fade: 100%; /* how far across the cover box (the copy plus the glow room) the fade reaches full cover */
-    --reflection-glow-room: 48px; /* how far the fade's cover reaches past the copy, so the glow never ends at a visible edge */
+    --reflection-glow-room: 48px; /* how far the fade's mask reaches past the copy on every side, so the glow is not cut off at the copy's box */
+    --floor-surface-share: 70%; /* how much of Grid's floor colour stays opaque, so the blooms show through a little dimmer than in the sky */
     --link-fade-duration: 160ms; /* Grid's button timing */
     --link-fade-easing: ease;
   }
@@ -48,7 +48,7 @@
   .stage { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: var(--horizon); }
   .sky, .floor { padding-inline: var(--page-inset); }
   .sky { display: flex; flex-direction: column; align-items: center; padding-bottom: var(--horizon-gap); }
-  .floor { position: relative; overflow: hidden; display: flex; flex-direction: column; padding-bottom: var(--floor-bottom); } /* clips a reflection that runs past a short screen */
+  .floor { position: relative; overflow: hidden; background: color-mix(in srgb, var(--surface) var(--floor-surface-share), transparent); display: flex; flex-direction: column; padding-bottom: var(--floor-bottom); } /* clips a reflection that runs past a short screen */
   h1, h2 { margin: 0; }
   .sky .name { margin: auto 0 var(--name-gap); } /* floats the name a gap above the button */
   /* The wordmark: two identical SVGs share one grid cell. The base is a faint ghost; the lit copy shows through the lamp gradient and glows where lit. */
@@ -67,10 +67,17 @@
   .floor .gd-reflection-copy { position: absolute; inset-inline: 0; margin: 0 auto; opacity: var(--reflection-strong-opacity); filter: blur(var(--reflection-strong-blur)); }
   .github-reflection { top: var(--horizon-gap); }
   .name-reflection { top: calc(var(--horizon-gap) + var(--github-size) + var(--name-gap)); }
-  /* The reflection's fade is ours, and stays even if Grid's own fade is fixed. The cover runs clear at the horizon to opaque
-     at the far end, over its full length, and reaches the glow room past the copy, so the glow, which spills outside the copy,
-     fades too and shows no box edge. */
-  .gd-reflection-copy::after { inset: calc(-1 * var(--reflection-glow-room)); background: linear-gradient(0deg, transparent, var(--surface) var(--reflection-strong-fade)); }
+  /* The reflection's fade is ours, and stays even if Grid's own fade is fixed. Grid's opaque cover would paint a dark box over the
+     blooms, so it is off and the copy is masked instead: opaque at the horizon end, clear at the far end, over the copy's full
+     length. The mask is flipped with the copy, so "to top" runs from the horizon. It reaches the glow room past the copy on
+     every side, and holds opaque or clear inside that room, so the glow spills past the box and fades too. */
+  .gd-reflection-copy::after { content: none; }
+  .floor .gd-reflection-copy {
+    mask-image: linear-gradient(to top, #000 var(--reflection-glow-room), transparent calc(100% - var(--reflection-glow-room)));
+    mask-size: calc(100% + 2 * var(--reflection-glow-room)) calc(100% + 2 * var(--reflection-glow-room));
+    mask-position: calc(-1 * var(--reflection-glow-room)) calc(-1 * var(--reflection-glow-room));
+    mask-repeat: no-repeat; mask-clip: no-clip;
+  }
   a.gd-btn { text-decoration: none; }
   /* The GitHub button: Grid's primary button as a circle around the icon. */
   .github { box-sizing: border-box; width: var(--github-size); height: var(--github-size); padding: 0; justify-content: center; border-radius: 50%; }
@@ -88,7 +95,7 @@
   /* The same three blooms as .gd-opal, plus an amber one, behind the page. The layer is larger than the screen by
      the drift on every side, so sliding it never shows an edge. Each centre is Grid's screen position (grid/bundle.css)
      pushed in by the drift; the three opal radii are Grid's, in vw and vh because the layer is bigger than the screen.
-     The amber one is ours: mid-left of the sky, because the opaque floor hides anything below the horizon. */
+     The amber one is ours: mid-left of the sky. */
   .blooms {
     position: fixed; inset: calc(-1 * var(--bloom-drift)); z-index: -1; pointer-events: none;
     background-image:
