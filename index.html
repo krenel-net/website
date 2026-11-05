@@ -21,7 +21,8 @@
     --lamp-fade-easing: ease;
     --half-height: 50vh;     /* half the screen; dvh below follows a phone's moving address bar */
     --horizon-gap: var(--space-4); /* space between the GitHub button's bottom edge and the horizon */
-    --horizon: calc(var(--half-height) + var(--github-size) / 2 + var(--horizon-gap)) 1fr; /* sky rows, floor rows: the sky ends a gap below the button's bottom edge, which puts the button's centre at mid-screen */
+    --sky-height: calc(var(--half-height) + var(--github-size) / 2 + var(--horizon-gap)); /* the sky ends a gap below the button's bottom edge, which puts the button's centre at mid-screen */
+    --horizon: var(--sky-height) 1fr; /* sky row, floor row */
     --floor-bottom: var(--space-6); /* space under the Dependencies button; the open panel's bottom edge sits on the same line */
     --name-gap: clamp(var(--space-8), 12vh, 160px); /* space between the name's bottom edge and the GitHub button's top edge */
     --github-size: 38px;     /* the GitHub button's diameter: Grid's 36px button height plus its 1px border on each side */
@@ -32,12 +33,15 @@
     --bloom-drift-duration: 1800ms; /* a slow, soft swing */
     --amber-bloom-strength: 24%; /* the amber bloom's share of Grid's amber; the opal blooms are 10 to 12%, but amber reads dimmer on this dark page */
     --bloom-drift-easing: ease-out;
-    /* Stronger than Grid's defaults in grid/tokens.css, which leave the mirror nearly invisible on this sparse page. */
-    --reflection-strong-opacity: 0.8;
-    --reflection-strong-blur: 1px;
-    --reflection-glow-room: 48px; /* how far the fade's mask reaches past the copy on every side, so the glow is not cut off at the copy's box */
-    --floor-surface-share: 45%; /* how much of Grid's floor colour lies over the blooms, so they show through a little dimmer than in the sky */
-    --floor-sheen-depth: 40%; /* how far down the floor the gloss sheen fades out, from the horizon */
+    /* The floor is black gloss, so its reflections are dark and soft: dimmer and blurrier than Grid's defaults in grid/tokens.css would
+       make them on a clear mirror, and gone sooner. */
+    --reflection-strong-opacity: 0.55;
+    --reflection-strong-blur: 2px;
+    --reflection-fade-end: 75%; /* how far down the reflection (and its glow room) the fade reaches clear, from the horizon */
+    --reflection-glow-room: 48px; /* padding round each reflection inside its mask box, so the glow is not cut off at the copy's edge */
+    --floor-sheen-depth: 35%; /* how far down the floor the gloss sheen fades out, from the horizon */
+    --floor-blooms-opacity: 0.75; /* the blooms as seen in the floor: dimmer than in the sky */
+    --floor-blooms-brightness: 0.8; /* and darker, as in black gloss */
     --link-fade-duration: 160ms; /* Grid's button timing */
     --link-fade-easing: ease;
   }
@@ -49,11 +53,9 @@
   .stage { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: var(--horizon); }
   .sky, .floor { padding-inline: var(--page-inset); }
   .sky { display: flex; flex-direction: column; align-items: center; padding-bottom: var(--horizon-gap); }
-  /* A glossy floor that shows the blooms but not the body's grid lines. The ::before is solid floor colour at z-index -2: above the
-     body's grid, below the blooms (-1). The floor's own fill is a thinner coat of the same colour over the blooms, with Grid's gloss
-     sheen (--gloss-high, as in .gd-gloss) running down from the horizon. */
-  .floor { position: relative; overflow: hidden; background: color-mix(in srgb, var(--surface) var(--floor-surface-share), transparent), linear-gradient(180deg, var(--gloss-high), transparent var(--floor-sheen-depth)); display: flex; flex-direction: column; padding-bottom: var(--floor-bottom); } /* clips a reflection that runs past a short screen */
-  .floor::before { content: ""; position: absolute; inset: 0; z-index: -2; background: var(--surface); }
+  /* The floor is opaque near-black gloss (Grid's darkest fill under its gloss sheen from the horizon), so the body's grid lines and
+     the sky's blooms do not show through. The sky's blooms are reflected in it by .floor-blooms instead. */
+  .floor { position: relative; overflow: hidden; background: linear-gradient(180deg, var(--gloss-high), transparent var(--floor-sheen-depth)), var(--surface-sunken); display: flex; flex-direction: column; padding-bottom: var(--floor-bottom); } /* clips a reflection that runs past a short screen */
   h1, h2 { margin: 0; }
   .sky .name { margin: auto 0 var(--name-gap); } /* floats the name a gap above the button */
   /* The wordmark: two identical SVGs share one grid cell. The base is a faint ghost; the lit copy shows through the lamp gradient and glows where lit. */
@@ -68,21 +70,19 @@
   #lamp stop:first-child { stop-color: var(--white-light); stop-opacity: 1; }
   #lamp stop:last-child { stop-color: var(--white-light); stop-opacity: 0; }
   /* Reflections: what stands h above the horizon is mirrored h below it. They sit out of the flow so the Dependencies note keeps
-     the floor's corner. The name's reflection holds both layers, so the lamp lights the mirrored letters too. */
-  .floor .gd-reflection-copy {
-    position: absolute; inset-inline: 0; margin: 0 auto; opacity: var(--reflection-strong-opacity); filter: blur(var(--reflection-strong-blur));
-    /* The page's own fade. Grid's opaque cover would paint a dark box over the blooms, so the copy is masked instead: opaque at the
-       horizon end, clear at the far end, over the copy plus the glow room on every side, so the glow spills past the box and fades
-       too. The mask is flipped with the copy, so "to top" runs from the horizon. The -webkit- forms are for Safari. */
-    -webkit-mask-image: linear-gradient(to top, black, transparent); mask-image: linear-gradient(to top, black, transparent);
-    -webkit-mask-size: calc(100% + 2 * var(--reflection-glow-room)) calc(100% + 2 * var(--reflection-glow-room)); mask-size: calc(100% + 2 * var(--reflection-glow-room)) calc(100% + 2 * var(--reflection-glow-room));
-    -webkit-mask-position: calc(-1 * var(--reflection-glow-room)) calc(-1 * var(--reflection-glow-room)); mask-position: calc(-1 * var(--reflection-glow-room)) calc(-1 * var(--reflection-glow-room));
-    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-    mask-clip: no-clip;
+     the floor's corner. The name's reflection holds both layers, so the lamp lights the mirrored letters too. Each copy sits in a
+     wrapper that is the glow room taller on both ends and carries the dark gloss: opacity, blur, and the page's own fade, a mask
+     that is opaque at the horizon end and clear at the far end. Grid's opaque cover and its own opacity and blur are off, so the
+     glow, which spills past the copy, fades inside the wrapper and shows no box edge. The -webkit- form is for Safari. */
+  .reflection {
+    position: absolute; inset-inline: 0; display: flex; justify-content: center; padding-block: var(--reflection-glow-room);
+    opacity: var(--reflection-strong-opacity); filter: blur(var(--reflection-strong-blur));
+    -webkit-mask-image: linear-gradient(to bottom, black, transparent var(--reflection-fade-end)); mask-image: linear-gradient(to bottom, black, transparent var(--reflection-fade-end));
   }
-  .gd-reflection-copy::after { content: none; } /* Grid's cover, off */
-  .github-reflection { top: var(--horizon-gap); }
-  .name-reflection { top: calc(var(--horizon-gap) + var(--github-size) + var(--name-gap)); }
+  .reflection .gd-reflection-copy { margin: 0; opacity: 1; filter: none; }
+  .reflection .gd-reflection-copy::after { content: none; }
+  .github-reflection { top: calc(var(--horizon-gap) - var(--reflection-glow-room)); }
+  .name-reflection { top: calc(var(--horizon-gap) + var(--github-size) + var(--name-gap) - var(--reflection-glow-room)); }
   a.gd-btn { text-decoration: none; }
   /* The GitHub button: Grid's primary button as a circle around the icon. */
   .github { box-sizing: border-box; width: var(--github-size); height: var(--github-size); padding: 0; justify-content: center; border-radius: 50%; }
@@ -101,8 +101,8 @@
      the drift on every side, so sliding it never shows an edge. Each centre is Grid's screen position (grid/bundle.css)
      pushed in by the drift; the three opal radii are Grid's, in vw and vh because the layer is bigger than the screen.
      The amber one is ours: mid-left of the sky. */
-  .blooms {
-    position: fixed; inset: calc(-1 * var(--bloom-drift)); z-index: -1; pointer-events: none;
+  .blooms, .floor-blooms {
+    pointer-events: none;
     background-image:
       radial-gradient(ellipse 55vw 45vh at calc(var(--bloom-drift) + 18vw) calc(var(--bloom-drift) + 12vh), var(--opal-cyan), transparent 70%),
       radial-gradient(ellipse 50vw 55vh at calc(var(--bloom-drift) + 82vw) calc(var(--bloom-drift) + 88vh), var(--opal-pearl), transparent 70%),
@@ -112,7 +112,17 @@
     transition: transform var(--bloom-drift-duration) var(--bloom-drift-easing);
     will-change: transform;
   }
-  @media (prefers-reduced-motion: reduce) { .blooms { transition: none; } }
+  .blooms { position: fixed; inset: calc(-1 * var(--bloom-drift)); z-index: -1; }
+  /* The sky's blooms as seen in the floor: the same layer, mirrored about the horizon, dimmer and darker. Fixed elements are not
+     clipped by the floor, so this one is absolute inside it, and the floor clips it. Its top is the mirror of the blooms layer's
+     bottom edge. The script flips it with scaleY(-1) and moves it opposite to the sky's blooms, same x, opposite y. */
+  .floor-blooms {
+    position: absolute; left: calc(-1 * var(--bloom-drift)); right: calc(-1 * var(--bloom-drift));
+    top: calc(var(--sky-height) - 2 * var(--half-height) - var(--bloom-drift)); height: calc(2 * var(--half-height) + 2 * var(--bloom-drift));
+    transform: scaleY(-1);
+    opacity: var(--floor-blooms-opacity); filter: brightness(var(--floor-blooms-brightness));
+  }
+  @media (prefers-reduced-motion: reduce) { .blooms, .floor-blooms { transition: none; } }
 
   /* Dependencies: quiet text in the floor's corner opens a panel over it. It is a native popover,
      so Esc, a click outside or Close dismisses it with no script. */
@@ -185,12 +195,17 @@
     </a>
   </div>
   <div class="gd-floor floor">
-    <div class="gd-reflection-copy github-reflection gd-btn gd-btn-primary github" aria-hidden="true">
+    <div class="floor-blooms" aria-hidden="true"></div>
+    <div class="reflection github-reflection" aria-hidden="true">
+    <div class="gd-reflection-copy gd-btn gd-btn-primary github">
       <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
     </div>
-    <div class="gd-reflection-copy name name-reflection" aria-hidden="true">
+    </div>
+    <div class="reflection name-reflection" aria-hidden="true">
+    <div class="gd-reflection-copy name">
       <svg class="name-base" viewBox="-29 -29 847.4 114"><use href="#wordmark"/></svg>
       <svg class="name-lit" viewBox="-29 -29 847.4 114"><use href="#wordmark"/></svg>
+    </div>
     </div>
     <button class="dependencies-open" popovertarget="dependencies">Dependencies</button>
     <section id="dependencies" class="gd-panel dependencies" popover aria-labelledby="dependencies-title">
@@ -218,6 +233,7 @@
   const lit = document.querySelector('.name-lit');
   const lamp = document.getElementById('lamp');
   const blooms = document.querySelector('.blooms');
+  const floorBlooms = document.querySelector('.floor-blooms');
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let drift, pointer, rest, queued = false;
   let asked = false, asking = false, gotReading = false; // iPhone motion permission: ask until answered, never once readings flow
@@ -243,6 +259,7 @@
     const nx = clamp((x / innerWidth) * 2 - 1);
     const ny = clamp((y / innerHeight) * 2 - 1);
     blooms.style.transform = `translate3d(${-nx * drift}px, ${-ny * drift}px, 0)`;
+    floorBlooms.style.transform = `translate3d(${-nx * drift}px, ${ny * drift}px, 0) scaleY(-1)`; // the mirror: same x, opposite y
   }
 
   // Any pointer position, real or from tilt, places the lamp. A pointer always shows the lit layer; tilt shows it only outside
