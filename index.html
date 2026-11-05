@@ -13,7 +13,8 @@
   /* Page-only sizes. Everything else is a Grid token (grid/tokens.css) or class (grid/bundle.css). */
   :root {
     --page-inset: clamp(var(--space-6), 6vw, var(--space-12)); /* left and right margin */
-    --name-width: min(100vw - 2 * var(--page-inset), 960px); /* the wordmark's width; its height follows from the viewBox */
+    --name-width: min(100vw - 2 * var(--page-inset), 960px, (var(--half-height) - var(--github-size) / 2 - var(--name-gap) - var(--dependencies-top) - var(--dependencies-line-height)) * var(--name-aspect)); /* the wordmark's width: the screen's width, 960px, or on a short screen what fits under the Dependencies link; its height follows from the viewBox */
+    --name-aspect: 7.43;     /* the wordmark's viewBox width over its height (847.4 / 114) */
     --name-base-opacity: 0.03;      /* the unlit wordmark: a ghost a careful eye can still find */
     --name-glow: drop-shadow(0 0 4px var(--cyan)); /* static glow on the base wordmark: one small shadow, so the ghost has no hard edge */
     --name-lit-glow: drop-shadow(0 0 6px var(--cyan)) drop-shadow(0 0 18px var(--cyan)); /* glow on the lit letters; it shines only where the lamp lights the stroke */
@@ -23,11 +24,12 @@
     --horizon-gap: var(--space-4); /* space between the GitHub button's bottom edge and the horizon */
     --sky-height: calc(var(--half-height) + var(--github-size) / 2 + var(--horizon-gap)); /* the sky ends a gap below the button's bottom edge, which puts the button's centre at mid-screen */
     --horizon: var(--sky-height) 1fr; /* sky row, floor row */
-    --floor-bottom: var(--space-6); /* space under the Dependencies button; the open panel's bottom edge sits on the same line */
+    --dependencies-top: var(--space-6); /* space above the Dependencies link; the open panel's top edge sits on the same line */
     --name-gap: clamp(var(--space-8), 12vh, 160px); /* space between the name's bottom edge and the GitHub button's top edge */
     --github-size: 38px;     /* the GitHub button's diameter: Grid's 36px button height plus its 1px border on each side */
     --github-icon-size: 18px; /* half the button's diameter, so the mark sits centred with even room */
     --dependencies-text-size: 0.8125rem; /* the quiet Dependencies link */
+    --dependencies-line-height: 20px; /* its height, which the name keeps clear of */
     --dependencies-width: 480px; /* widest the Dependencies panel gets */
     --bloom-drift: 33vmin;   /* how far the blooms may travel, about a third of the screen; the blooms layer reaches this far past every screen edge */
     --bloom-drift-duration: 1800ms; /* a slow, soft swing */
@@ -48,13 +50,13 @@
   @supports (height: 100dvh) { :root { --half-height: 50dvh; } }
 
   /* The GitHub button sits at the centre of the screen with the horizon just below it; the name floats in the sky above
-     it; the floor holds the reflections and the Dependencies note. */
+     it, and the Dependencies link sits in its top-right corner; the floor holds the reflections. */
   .stage { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: var(--horizon); }
   .sky, .floor { padding-inline: var(--page-inset); }
-  .sky { display: flex; flex-direction: column; align-items: center; padding-bottom: var(--horizon-gap); }
+  .sky { position: relative; display: flex; flex-direction: column; align-items: center; padding-bottom: var(--horizon-gap); }
   /* The floor is opaque near-black gloss (Grid's darkest fill with a thin highlight at the horizon), so the body's grid lines and
      the sky's blooms do not show through. The sky's blooms are reflected in it by .floor-blooms instead. */
-  .floor { position: relative; overflow: hidden; background: linear-gradient(180deg, var(--gloss-low), transparent var(--floor-sheen-depth)), var(--surface-sunken); display: flex; flex-direction: column; padding-bottom: var(--floor-bottom); } /* clips a reflection that runs past a short screen */
+  .floor { position: relative; overflow: hidden; background: linear-gradient(180deg, var(--gloss-low), transparent var(--floor-sheen-depth)), var(--surface-sunken); } /* clips a reflection that runs past a short screen */
   h1, h2 { margin: 0; }
   .sky .name { margin: auto 0 var(--name-gap); } /* floats the name a gap above the button */
   /* The wordmark: two identical SVGs share one grid cell. The base is a faint ghost; the lit copy shows through the lamp gradient and glows where lit. */
@@ -68,8 +70,7 @@
   .lamp-on .name-lit { opacity: 1; }
   #lamp stop:first-child { stop-color: var(--white-light); stop-opacity: 1; }
   #lamp stop:last-child { stop-color: var(--white-light); stop-opacity: 0; }
-  /* Reflections: what stands h above the horizon is mirrored h below it. They sit out of the flow so the Dependencies note keeps
-     the floor's corner. The name's reflection holds both layers, so the lamp lights the mirrored letters too. Each copy sits in a
+  /* Reflections: what stands h above the horizon is mirrored h below it. They sit out of the flow, positioned from the horizon. The name's reflection holds both layers, so the lamp lights the mirrored letters too. Each copy sits in a
      wrapper that is the glow room taller on both ends and carries the dark gloss: opacity, blur, and the page's own fade, a mask
      that is opaque at the horizon end and clear at the far end. Grid's opaque cover and its own opacity and blur are off, so the
      glow, which spills past the copy, fades inside the wrapper and shows no box edge. The -webkit- form is for Safari. */
@@ -86,6 +87,12 @@
   /* The GitHub button: Grid's primary button as a circle around the icon. */
   .github { box-sizing: border-box; width: var(--github-size); height: var(--github-size); padding: 0; justify-content: center; border-radius: 50%; }
   .github svg { width: var(--github-icon-size); height: var(--github-icon-size); }
+  /* The reflected button shows the real button's hover, keyboard focus and press: Grid's own colour, glow, ring and fill
+     (grid/bundle.css), applied to the copy through the shared .stage. The copy has the same Grid classes, so it fades at the
+     same pace. The reflection takes no pointer events, so only the real button can trigger these. */
+  .stage:has(.sky .github:hover, .sky .github:active) .github-reflection .github { color: var(--white-light); box-shadow: var(--gloss), var(--glow-cyan-strong); }
+  .stage:has(.sky .github:focus-visible) .github-reflection .github { box-shadow: var(--focus-ring); }
+  .stage:has(.sky .github:active) .github-reflection .github { background-color: var(--cyan-soft); }
 
   /* Grid's .gd-opal paints the blooms and the grid lines as one background, so moving the blooms would repaint the whole
      screen. This keeps only the grid lines on the body (copied from grid/bundle.css) and moves the blooms to .blooms,
@@ -123,19 +130,19 @@
   }
   @media (prefers-reduced-motion: reduce) { .blooms, .floor-blooms { transition: none; } }
 
-  /* Dependencies: quiet text in the floor's corner opens a panel over it. It is a native popover,
+  /* Dependencies: quiet text in the page's top-right corner opens a panel over it. It is a native popover,
      so Esc, a click outside or Close dismisses it with no script. */
   .dependencies-open {
-    margin-top: auto; align-self: flex-end; padding: 0; border: 0; background: none; box-shadow: none;
-    font-family: var(--font-sans); font-size: var(--dependencies-text-size); cursor: pointer;
+    position: absolute; top: var(--dependencies-top); right: var(--page-inset); padding: 0; border: 0; background: none; box-shadow: none;
+    font-family: var(--font-sans); font-size: var(--dependencies-text-size); line-height: var(--dependencies-line-height); cursor: pointer;
     color: var(--ink-muted); transition: color var(--link-fade-duration) var(--link-fade-easing);
   }
   .dependencies-open:hover { color: var(--cyan); }
   .dependencies-open:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   .dependencies:popover-open {
-    position: fixed; inset: auto var(--page-inset) var(--floor-bottom) auto; margin: 0; box-sizing: border-box;
+    position: fixed; inset: var(--dependencies-top) var(--page-inset) auto auto; margin: 0; box-sizing: border-box;
     width: min(var(--dependencies-width), calc(100vw - 2 * var(--page-inset)));
-    max-height: calc(100dvh - 2 * var(--floor-bottom));
+    max-height: calc(100dvh - 2 * var(--dependencies-top));
   }
   .dependencies dl { margin: 0; }
   .dependencies .gd-label { padding-left: 0; }
@@ -192,20 +199,6 @@
     <a class="gd-btn gd-btn-primary github" href="https://github.com/krenel-net" aria-label="krenel-net on GitHub">
       <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
     </a>
-  </div>
-  <div class="gd-floor floor">
-    <div class="floor-blooms" aria-hidden="true"></div>
-    <div class="reflection github-reflection" aria-hidden="true">
-    <div class="gd-reflection-copy gd-btn gd-btn-primary github">
-      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
-    </div>
-    </div>
-    <div class="reflection name-reflection" aria-hidden="true">
-    <div class="gd-reflection-copy name">
-      <svg class="name-base" viewBox="-29 -29 847.4 114"><use href="#wordmark"/></svg>
-      <svg class="name-lit" viewBox="-29 -29 847.4 114"><use href="#wordmark"/></svg>
-    </div>
-    </div>
     <button class="dependencies-open" popovertarget="dependencies">Dependencies</button>
     <section id="dependencies" class="gd-panel dependencies" popover aria-labelledby="dependencies-title">
       <div class="gd-panel-head">
@@ -221,6 +214,20 @@
         <dd>This page sets no cookies. One short script in the page moves the glow with your pointer or your phone's tilt and sends nothing anywhere. On iPhone and iPad, tapping the page asks for motion access, and the readings stay in the page.</dd>
       </dl>
     </section>
+  </div>
+  <div class="gd-floor floor">
+    <div class="floor-blooms" aria-hidden="true"></div>
+    <div class="reflection github-reflection" aria-hidden="true">
+    <div class="gd-reflection-copy gd-btn gd-btn-primary github">
+      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+    </div>
+    </div>
+    <div class="reflection name-reflection" aria-hidden="true">
+    <div class="gd-reflection-copy name">
+      <svg class="name-base" viewBox="-29 -29 847.4 114"><use href="#wordmark"/></svg>
+      <svg class="name-lit" viewBox="-29 -29 847.4 114"><use href="#wordmark"/></svg>
+    </div>
+    </div>
   </div>
 </main>
 <script>
