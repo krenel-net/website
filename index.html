@@ -39,9 +39,8 @@
     --reflection-strong-blur: 2px;
     --reflection-fade-end: 75%; /* how far down the reflection (and its glow room) the fade reaches clear, from the horizon */
     --reflection-glow-room: 48px; /* padding round each reflection inside its mask box, so the glow is not cut off at the copy's edge */
-    --floor-sheen-depth: 35%; /* how far down the floor the gloss sheen fades out, from the horizon */
-    --floor-blooms-opacity: 0.75; /* the blooms as seen in the floor: dimmer than in the sky */
-    --floor-blooms-brightness: 0.8; /* and darker, as in black gloss */
+    --floor-sheen-depth: 8%; /* how far down the floor the thin gloss highlight reaches, from the horizon */
+    --floor-blooms-opacity: 0.6; /* the blooms as seen in the floor: dimmer and darker than in the sky, as in black gloss; opacity only, since a brightness filter bands the soft gradients */
     --link-fade-duration: 160ms; /* Grid's button timing */
     --link-fade-easing: ease;
   }
@@ -53,9 +52,9 @@
   .stage { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: var(--horizon); }
   .sky, .floor { padding-inline: var(--page-inset); }
   .sky { display: flex; flex-direction: column; align-items: center; padding-bottom: var(--horizon-gap); }
-  /* The floor is opaque near-black gloss (Grid's darkest fill under its gloss sheen from the horizon), so the body's grid lines and
+  /* The floor is opaque near-black gloss (Grid's darkest fill with a thin highlight at the horizon), so the body's grid lines and
      the sky's blooms do not show through. The sky's blooms are reflected in it by .floor-blooms instead. */
-  .floor { position: relative; overflow: hidden; background: linear-gradient(180deg, var(--gloss-high), transparent var(--floor-sheen-depth)), var(--surface-sunken); display: flex; flex-direction: column; padding-bottom: var(--floor-bottom); } /* clips a reflection that runs past a short screen */
+  .floor { position: relative; overflow: hidden; background: linear-gradient(180deg, var(--gloss-low), transparent var(--floor-sheen-depth)), var(--surface-sunken); display: flex; flex-direction: column; padding-bottom: var(--floor-bottom); } /* clips a reflection that runs past a short screen */
   h1, h2 { margin: 0; }
   .sky .name { margin: auto 0 var(--name-gap); } /* floats the name a gap above the button */
   /* The wordmark: two identical SVGs share one grid cell. The base is a faint ghost; the lit copy shows through the lamp gradient and glows where lit. */
@@ -120,7 +119,7 @@
     position: absolute; left: calc(-1 * var(--bloom-drift)); right: calc(-1 * var(--bloom-drift));
     top: calc(var(--sky-height) - 2 * var(--half-height) - var(--bloom-drift)); height: calc(2 * var(--half-height) + 2 * var(--bloom-drift));
     transform: scaleY(-1);
-    opacity: var(--floor-blooms-opacity); filter: brightness(var(--floor-blooms-brightness));
+    opacity: var(--floor-blooms-opacity);
   }
   @media (prefers-reduced-motion: reduce) { .blooms, .floor-blooms { transition: none; } }
 
