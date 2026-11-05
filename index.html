@@ -32,10 +32,10 @@
     --bloom-drift-duration: 1800ms; /* a slow, soft swing */
     --amber-bloom-strength: 24%; /* the amber bloom's share of Grid's amber; the opal blooms are 10 to 12%, but amber reads dimmer on this dark page */
     --bloom-drift-easing: ease-out;
-    /* Grid's reflection tokens (0.22, 2px, 45%) leave the mirror nearly invisible on this sparse page, so the floor's reflections are stronger. */
+    /* Stronger than Grid's defaults in grid/tokens.css, which leave the mirror nearly invisible on this sparse page. */
     --reflection-strong-opacity: 0.8;
     --reflection-strong-blur: 1px;
-    --reflection-strong-fade: 100%; /* how far down the copy the fade reaches full cover */
+    --reflection-strong-fade: 100%; /* how far across the cover box (the copy plus the glow room) the fade reaches full cover */
     --reflection-glow-room: 48px; /* how far the fade's cover reaches past the copy, so the glow never ends at a visible edge */
     --link-fade-duration: 160ms; /* Grid's button timing */
     --link-fade-easing: ease;
@@ -67,10 +67,9 @@
   .floor .gd-reflection-copy { position: absolute; inset-inline: 0; margin: 0 auto; opacity: var(--reflection-strong-opacity); filter: blur(var(--reflection-strong-blur)); }
   .github-reflection { top: var(--horizon-gap); }
   .name-reflection { top: calc(var(--horizon-gap) + var(--github-size) + var(--name-gap)); }
-  /* Grid's README: the reflection's fade is clear at the floor and opaque by reflection-fade of the copy's height.
-     grid/bundle.css measures it from the far end, which leaves the name legible.
-     This restores the README's fade; drop it once bundle.css is fixed in the artifact. The cover also reaches past the copy,
-     so the glow, which spills outside it, is faded too and shows no box edge. */
+  /* The reflection's fade is ours, and stays even if Grid's own fade is fixed. The cover runs clear at the horizon to opaque
+     at the far end, over its full length, and reaches the glow room past the copy, so the glow, which spills outside the copy,
+     fades too and shows no box edge. */
   .gd-reflection-copy::after { inset: calc(-1 * var(--reflection-glow-room)); background: linear-gradient(0deg, transparent, var(--surface) var(--reflection-strong-fade)); }
   a.gd-btn { text-decoration: none; }
   /* The GitHub button: Grid's primary button as a circle around the icon. */
@@ -200,6 +199,7 @@
 </main>
 <script>
   const MAX_TILT_DEG = 30; // tilt from the resting angle that sends the virtual pointer to a screen edge
+  const TILT_DEAD_ZONE_DEG = 3; // within this much of the resting angle on both axes the light stays off, so the name stays a ghost at rest
   const TILT_TO_NAME_DEG = 15; // tilting the top away by this much puts the light on the name's centre, and it stays there beyond it
 
   const root = document.documentElement;
@@ -233,10 +233,11 @@
     blooms.style.transform = `translate3d(${-nx * drift}px, ${-ny * drift}px, 0)`;
   }
 
-  // Any pointer position, real or from tilt, places the lamp and shows the lit layer. toName (0..1) pulls it toward the name's centre.
-  function point(x, y, toName = 0) {
+  // Any pointer position, real or from tilt, places the lamp. A pointer always shows the lit layer; tilt shows it only outside
+  // the dead zone (on = false). toName (0..1) pulls the light toward the name's centre.
+  function point(x, y, toName = 0, on = true) {
     pointer = { x, y, toName };
-    root.classList.add('lamp-on');
+    root.classList.toggle('lamp-on', on);
     if (!queued) { queued = true; requestAnimationFrame(frame); }
   }
 
@@ -247,7 +248,7 @@
   root.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') root.classList.remove('lamp-on'); });
 
   // Phones: tilt acts as a pointer. The resting angle maps to the screen centre, where the GitHub button is, so the name
-  // stays a ghost at rest. Tilting the top away (beta falling) slides the light up to the name's centre over TILT_TO_NAME_DEG
+  // stays a ghost at rest: within TILT_DEAD_ZONE_DEG of it the light is off, since at 812x375 the lamp at the button reaches the letters. Tilting the top away (beta falling) slides the light up to the name's centre over TILT_TO_NAME_DEG
   // and holds it there; tilting the top toward you sweeps it down toward the bottom edge. Sideways tilt (gamma) sweeps
   // along the screen. Desktop Chrome sends one null reading, which the guard drops.
   addEventListener('deviceorientation', (e) => {
@@ -255,21 +256,23 @@
     gotReading = true;
     rest = rest || { beta: e.beta, gamma: e.gamma }; // the first reading is the resting angle
     const away = rest.beta - e.beta; // positive when the top tilts away
+    const side = e.gamma - rest.gamma;
     point(
-      innerWidth / 2 + clamp((e.gamma - rest.gamma) / MAX_TILT_DEG) * innerWidth / 2,
+      innerWidth / 2 + clamp(side / MAX_TILT_DEG) * innerWidth / 2,
       innerHeight / 2 + Math.min(1, Math.max(0, -away / MAX_TILT_DEG)) * innerHeight / 2,
-      Math.max(0, clamp(away / TILT_TO_NAME_DEG))
+      Math.max(0, clamp(away / TILT_TO_NAME_DEG)),
+      Math.abs(away) > TILT_DEAD_ZONE_DEG || Math.abs(side) > TILT_DEAD_ZONE_DEG
     );
   }, { passive: true });
 
   // iOS Safari sends no readings until requestPermission() is granted, and only inside a user gesture. A tap (touchend,
   // which only touch fires) asks if the browser has that call and no reading has arrived (Android never needs it).
   // Granted readings reach the listener above. Once answered, even 'denied', it never asks again; a rejection
-  // (not a gesture, say) lets the next tap retry. Taps on links and buttons keep their own job.
+  // (not a gesture, say) lets the next tap retry. Taps on links, buttons and inside the open panel keep their own job; a tap that light-dismisses the panel lands outside it and may ask.
   addEventListener('touchend', (e) => {
     if (asked || asking || gotReading) return;
     if (typeof DeviceOrientationEvent === 'undefined' || typeof DeviceOrientationEvent.requestPermission !== 'function') return;
-    if (e.target.closest('a, button')) return;
+    if (e.target.closest('a, button, [popover]')) return;
     asking = true;
     DeviceOrientationEvent.requestPermission()
       .then(() => { asked = true; }, () => {})
