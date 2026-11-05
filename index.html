@@ -36,7 +36,8 @@
     --reflection-strong-opacity: 0.8;
     --reflection-strong-blur: 1px;
     --reflection-glow-room: 48px; /* how far the fade's mask reaches past the copy on every side, so the glow is not cut off at the copy's box */
-    --floor-surface-share: 45%; /* how much of Grid's floor colour stays opaque, so the blooms show through a little dimmer than in the sky */
+    --floor-surface-share: 45%; /* how much of Grid's floor colour lies over the blooms, so they show through a little dimmer than in the sky */
+    --floor-sheen-depth: 40%; /* how far down the floor the gloss sheen fades out, from the horizon */
     --link-fade-duration: 160ms; /* Grid's button timing */
     --link-fade-easing: ease;
   }
@@ -48,8 +49,11 @@
   .stage { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: var(--horizon); }
   .sky, .floor { padding-inline: var(--page-inset); }
   .sky { display: flex; flex-direction: column; align-items: center; padding-bottom: var(--horizon-gap); }
-  /* A see-through floor: the blooms and the page's grid lines show through it. */
-  .floor { position: relative; overflow: hidden; background: color-mix(in srgb, var(--surface) var(--floor-surface-share), transparent); display: flex; flex-direction: column; padding-bottom: var(--floor-bottom); } /* clips a reflection that runs past a short screen */
+  /* A glossy floor that shows the blooms but not the body's grid lines. The ::before is solid floor colour at z-index -2: above the
+     body's grid, below the blooms (-1). The floor's own fill is a thinner coat of the same colour over the blooms, with Grid's gloss
+     sheen (--gloss-high, as in .gd-gloss) running down from the horizon. */
+  .floor { position: relative; overflow: hidden; background: color-mix(in srgb, var(--surface) var(--floor-surface-share), transparent), linear-gradient(180deg, var(--gloss-high), transparent var(--floor-sheen-depth)); display: flex; flex-direction: column; padding-bottom: var(--floor-bottom); } /* clips a reflection that runs past a short screen */
+  .floor::before { content: ""; position: absolute; inset: 0; z-index: -2; background: var(--surface); }
   h1, h2 { margin: 0; }
   .sky .name { margin: auto 0 var(--name-gap); } /* floats the name a gap above the button */
   /* The wordmark: two identical SVGs share one grid cell. The base is a faint ghost; the lit copy shows through the lamp gradient and glows where lit. */
