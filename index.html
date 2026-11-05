@@ -4,30 +4,30 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>krenel.net</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wght@100..900&display=swap">
+<link rel="preload" href="fonts/saira-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="grid/tokens.css">
 <link rel="stylesheet" href="grid/bundle.css">
 <style>
+  /* Saira, self-hosted (fonts/): one variable-weight file, preloaded above so it usually arrives before first paint. */
+  @font-face { font-family: "Saira"; src: url("fonts/saira-latin.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+
   /* Page-only sizes. Everything else is a Grid token (grid/tokens.css) or class (grid/bundle.css). */
   :root {
     --page-inset: clamp(var(--space-6), 6vw, var(--space-12)); /* left and right margin */
-    --name-width: min(100vw - 2 * var(--page-inset), 960px, (var(--half-height) - var(--github-size) / 2 - var(--name-gap) - var(--dependencies-top) - var(--dependencies-line-height)) * var(--name-aspect)); /* the wordmark's width: the screen's width, 960px, or on a short screen what fits under the Dependencies link; its height follows from the viewBox */
-    --name-aspect: calc(847.4 / 114);     /* the wordmark's viewBox width over its height (847.4 / 114) */
+    --name-width: min(100vw - 2 * var(--page-inset), 960px, (var(--screen-height) / 2 - var(--github-size) / 2 - var(--name-gap) - var(--dependencies-top) - var(--dependencies-line-height)) * var(--name-aspect)); /* the wordmark's width: the screen's width, 960px, or on a short screen what fits under the Dependencies link; its height follows from the viewBox */
+    --name-aspect: calc(847.4 / 114);     /* the wordmark's viewBox width over its height; keep in step with the viewBox of the four wordmark SVGs */
     --name-base-opacity: 0.03;      /* the unlit wordmark: a ghost a careful eye can still find */
     --name-glow: drop-shadow(0 0 4px var(--cyan)); /* static glow on the base wordmark: one small shadow, so the ghost has no hard edge */
     --name-lit-glow: drop-shadow(0 0 6px var(--cyan)) drop-shadow(0 0 18px var(--cyan)); /* glow on the lit letters; it shines only where the lamp lights the stroke */
     --lamp-fade-duration: 300ms; /* the lit layer fading in under the pointer and out when it leaves */
     --lamp-fade-easing: ease;
-    --half-height: 50vh;     /* half the screen; dvh below follows a phone's moving address bar */
+    --screen-height: 100vh;  /* the screen's height; dvh below follows a phone's moving address bar */
     --horizon-gap: var(--space-4); /* space between the GitHub button's bottom edge and the horizon */
-    --sky-height: calc(var(--half-height) + var(--github-size) / 2 + var(--horizon-gap)); /* the sky ends a gap below the button's bottom edge, which puts the button's centre at mid-screen */
-    --horizon: var(--sky-height) 1fr; /* sky row, floor row */
+    --sky-height: calc(var(--screen-height) / 2 + var(--github-size) / 2 + var(--horizon-gap)); /* the sky ends a gap below the button's bottom edge, which puts the button's centre at mid-screen */
     --dependencies-top: var(--space-6); /* space above the Dependencies link; the open panel's top edge sits on the same line */
     --name-gap: clamp(var(--space-8), 12vh, 160px); /* space between the name's bottom edge and the GitHub button's top edge */
     --github-size: 38px;     /* the GitHub button's diameter: Grid's 36px button height plus its 1px border on each side */
-    --github-icon-size: 18px; /* half the button's diameter, so the mark sits centred with even room */
+    --github-icon-size: 18px; /* half the button's 36px inside, so the mark sits centred with even room */
     --dependencies-text-size: 0.8125rem; /* the quiet Dependencies link */
     --dependencies-line-height: 20px; /* its height, which the name keeps clear of */
     --dependencies-width: 480px; /* widest the Dependencies panel gets */
@@ -45,47 +45,47 @@
     --floor-blooms-opacity: 0.6; /* the blooms as seen in the floor: dimmer and darker than in the sky, as in black gloss; opacity only, since a brightness filter bands the soft gradients */
     --link-fade-duration: 160ms; /* Grid's button timing */
     --link-fade-easing: ease;
+    --focus-outline: 2px; /* the keyboard focus outline's width, and its gap from the element */
   }
 
-  @supports (height: 100dvh) { :root { --half-height: 50dvh; } }
+  @supports (height: 100dvh) { :root { --screen-height: 100dvh; } }
 
   /* The GitHub button sits at the centre of the screen with the horizon just below it; the name floats in the sky above
      it, and the Dependencies link sits in its top-right corner; the floor holds the reflections. */
-  .stage { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: var(--horizon); }
-  .sky, .floor { padding-inline: var(--page-inset); }
-  .sky { position: relative; display: flex; flex-direction: column; align-items: center; padding-bottom: var(--horizon-gap); }
+  .stage { min-height: var(--screen-height); display: grid; grid-template-rows: var(--sky-height) 1fr; } /* sky row, floor row */
+  .sky { position: relative; display: flex; flex-direction: column; align-items: center; padding-inline: var(--page-inset); padding-bottom: var(--horizon-gap); }
   /* The floor is opaque near-black gloss (Grid's darkest fill with a thin highlight at the horizon), so the body's grid lines and
      the sky's blooms do not show through. The sky's blooms are reflected in it by .floor-blooms instead. */
-  .floor { position: relative; overflow: hidden; background: linear-gradient(180deg, var(--gloss-low), transparent var(--floor-sheen-depth)), var(--surface-sunken); } /* clips a reflection that runs past a short screen; also keeps .floor-blooms and the reflection wrappers' glow room from showing above the horizon */
-  h1, h2 { margin: 0; }
+  .floor { overflow: hidden; background: linear-gradient(180deg, var(--gloss-low), transparent var(--floor-sheen-depth)), var(--surface-sunken); } /* Grid's .gd-floor positions it, so its children are placed from the horizon. It clips a reflection that runs past a short screen; also keeps .floor-blooms and the reflection wrappers' glow room from showing above the horizon */
   .sky .name { margin: auto 0 var(--name-gap); } /* floats the name a gap above the button */
-  /* The wordmark: two identical SVGs share one grid cell. The base is a faint ghost; the lit copy shows through the lamp gradient and glows where lit. */
+  /* The wordmark: two identical SVGs share one grid cell. The base is a faint ghost; the lit copy shows through the lamp gradient and glows where lit.
+     Each SVG sets the stroke, which its <use> passes on to the letters. */
   .name { display: grid; width: var(--name-width); }
   .name svg { grid-area: 1 / 1; display: block; width: 100%; height: auto; }
-  .name-base use { stroke: var(--cyan); }
-  .name-base { opacity: var(--name-base-opacity); filter: var(--name-glow); }
-  .name-lit use { stroke: url(#lamp); }
+  .name-base { stroke: var(--cyan); opacity: var(--name-base-opacity); filter: var(--name-glow); }
   /* Hidden until the script first places the lamp, and again when the pointer leaves the window. */
-  .name-lit { opacity: 0; filter: var(--name-lit-glow); transition: opacity var(--lamp-fade-duration) var(--lamp-fade-easing); }
+  .name-lit { stroke: url(#lamp); opacity: 0; filter: var(--name-lit-glow); transition: opacity var(--lamp-fade-duration) var(--lamp-fade-easing); }
   .lamp-on .name-lit { opacity: 1; }
-  #lamp stop:first-child { stop-color: var(--white-light); stop-opacity: 1; }
-  #lamp stop:last-child { stop-color: var(--white-light); stop-opacity: 0; }
-  /* Reflections: what stands h above the horizon is mirrored h below it. They sit out of the flow, positioned from the horizon. The name's reflection holds both layers, so the lamp lights the mirrored letters too. Each copy sits in a
-     wrapper that is the glow room taller on both ends and carries the dark gloss: opacity, blur, and the page's own fade, a mask
-     that is opaque at the horizon end and clear at the far end. Grid's opaque cover and its own opacity and blur are off, so the
-     glow, which spills past the copy, fades inside the wrapper and shows no box edge. The -webkit- form is for Safari. */
+  #lamp stop { stop-color: var(--white-light); }
+  #lamp stop:last-child { stop-opacity: 0; }
+  /* Reflections: what stands h above the horizon is mirrored h below it. They sit out of the flow, positioned from the
+     horizon, and take no pointer events. The name's reflection holds both layers, so the lamp lights the mirrored letters
+     too. Each copy sits in a wrapper that is the glow room taller on both ends (its negative margin keeps each top at the
+     mirror distance) and carries the dark gloss: opacity, blur, and a mask that is opaque at the horizon end and clear at
+     the far end. Grid's .gd-reflection-copy is not used: its cover in the ground colour would show as a box on this floor,
+     and the glow, which spills past the copy, has to fade inside the wrapper. The -webkit- form is for Safari. */
   .reflection {
-    position: absolute; inset-inline: 0; display: flex; justify-content: center; padding-block: var(--reflection-glow-room);
+    position: absolute; inset-inline: 0; display: flex; justify-content: center;
+    margin-top: calc(-1 * var(--reflection-glow-room)); padding-block: var(--reflection-glow-room);
     opacity: var(--reflection-gloss-opacity); filter: blur(var(--reflection-gloss-blur));
     -webkit-mask-image: linear-gradient(to bottom, black, transparent var(--reflection-fade-end)); mask-image: linear-gradient(to bottom, black, transparent var(--reflection-fade-end));
+    pointer-events: none; user-select: none;
   }
-  .reflection .gd-reflection-copy { margin: 0; opacity: 1; filter: none; }
-  .reflection .gd-reflection-copy::after { content: none; }
-  .github-reflection { top: calc(var(--horizon-gap) - var(--reflection-glow-room)); }
-  .name-reflection { top: calc(var(--horizon-gap) + var(--github-size) + var(--name-gap) - var(--reflection-glow-room)); }
-  a.gd-btn { text-decoration: none; }
+  .reflection > * { scale: 1 -1; } /* the mirror */
+  .github-reflection { top: var(--horizon-gap); }
+  .name-reflection { top: calc(var(--horizon-gap) + var(--github-size) + var(--name-gap)); }
   /* The GitHub button: Grid's primary button as a circle around the icon. */
-  .github { box-sizing: border-box; width: var(--github-size); height: var(--github-size); padding: 0; justify-content: center; border-radius: 50%; }
+  .github { box-sizing: border-box; width: var(--github-size); height: var(--github-size); padding: 0; justify-content: center; }
   .github svg { width: var(--github-icon-size); height: var(--github-icon-size); }
   /* The reflected button shows the real button's hover, keyboard focus and press: Grid's own colour, glow, ring and fill
      (grid/bundle.css), applied to the copy through the shared .stage. The copy has the same Grid classes, so it fades at the
@@ -95,18 +95,17 @@
   .stage:has(.sky .github:active) .github-reflection .github { background-color: var(--cyan-soft); }
 
   /* Grid's .gd-opal paints the blooms and the grid lines as one background, so moving the blooms would repaint the whole
-     screen. This keeps only the grid lines on the body (copied from grid/bundle.css) and moves the blooms to .blooms,
-     which can slide as a layer. Drop both rules once Grid offers the blooms as a separate layer. */
-  body.gd-opal {
+     screen. Here the body gets only Grid's grid lines (copied from grid/bundle.css), and .blooms carries the blooms as a
+     layer that can slide. Use .gd-opal again once Grid offers the blooms as a separate layer. */
+  body {
     background-image:
       repeating-linear-gradient(0deg, var(--grid-line) 0 1px, transparent 1px var(--space-8)),
       repeating-linear-gradient(90deg, var(--grid-line) 0 1px, transparent 1px var(--space-8));
-    background-repeat: repeat, repeat;
   }
   /* The same three blooms as .gd-opal, plus an amber one, behind the page. The layer is larger than the screen by
      the drift on every side, so sliding it never shows an edge. Each centre is Grid's screen position (grid/bundle.css)
      pushed in by the drift; the three opal radii are Grid's, in vw and vh because the layer is bigger than the screen.
-     The amber one is ours: mid-left of the sky. */
+     The amber one is ours: mid-left of the sky. Under reduced motion the script never moves them, so the transition never runs. */
   .blooms, .floor-blooms {
     pointer-events: none;
     background-image:
@@ -121,38 +120,37 @@
   .blooms { position: fixed; inset: calc(-1 * var(--bloom-drift)); z-index: -1; }
   /* The sky's blooms as seen in the floor: the same layer, mirrored about the horizon, dimmer and darker. Fixed elements are not
      clipped by the floor, so this one is absolute inside it, and the floor clips it. Its top is the mirror of the blooms layer's
-     bottom edge. The script flips it with scaleY(-1) and moves it opposite to the sky's blooms, same x, opposite y. */
+     bottom edge. The script gives it the sky layer's transform; scale applies after transform, so the mirrored copy moves the
+     same x and the opposite y. */
   .floor-blooms {
     position: absolute; left: calc(-1 * var(--bloom-drift)); right: calc(-1 * var(--bloom-drift));
-    top: calc(var(--sky-height) - 2 * var(--half-height) - var(--bloom-drift)); height: calc(2 * var(--half-height) + 2 * var(--bloom-drift));
-    transform: scaleY(-1);
+    top: calc(var(--sky-height) - var(--screen-height) - var(--bloom-drift)); height: calc(var(--screen-height) + 2 * var(--bloom-drift));
+    scale: 1 -1; /* the mirror */
     opacity: var(--floor-blooms-opacity);
   }
-  @media (prefers-reduced-motion: reduce) { .blooms, .floor-blooms { transition: none; } }
 
   /* Dependencies: quiet text in the page's top-right corner opens a panel over it. It is a native popover,
      so Esc, a click outside or Close dismisses it with no script. */
   .dependencies-open {
-    position: absolute; top: var(--dependencies-top); right: var(--page-inset); padding: 0; border: 0; background: none; box-shadow: none;
+    position: absolute; top: var(--dependencies-top); right: var(--page-inset); padding: 0; border: 0; background: none;
     font-family: var(--font-sans); font-size: var(--dependencies-text-size); line-height: var(--dependencies-line-height); cursor: pointer;
     color: var(--ink-muted); transition: color var(--link-fade-duration) var(--link-fade-easing);
   }
   .dependencies-open:hover { color: var(--cyan); }
-  .dependencies-open:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   .dependencies:popover-open {
     position: fixed; inset: var(--dependencies-top) var(--page-inset) auto auto; margin: 0; box-sizing: border-box;
     width: min(var(--dependencies-width), calc(100vw - 2 * var(--page-inset)));
-    max-height: calc(100dvh - 2 * var(--dependencies-top));
+    max-height: calc(var(--screen-height) - 2 * var(--dependencies-top));
   }
   .dependencies dl { margin: 0; }
   .dependencies .gd-label { padding-left: 0; }
   .dependencies dd { margin: 0 0 var(--space-4); color: var(--ink-muted); }
   .dependencies dd:last-child { margin-bottom: 0; }
   .dependencies a { color: var(--link); }
-  .dependencies a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .dependencies-open:focus-visible, .dependencies a:focus-visible { outline: var(--focus-outline) solid var(--focus); outline-offset: var(--focus-outline); }
 </style>
 </head>
-<body class="gd-opal">
+<body>
 <div class="blooms" aria-hidden="true"></div>
 <!-- The wordmark, one centre-line path per letter, one stroke width, flat ends, rounded corners. The letter origin is
      baked into each path's x: the lamp gradient is in user space, so letters must not be moved with x or transform.
@@ -179,6 +177,8 @@
       <path d="M716.4 0H666.4A14 14 0 0 0 652.4 14V42A14 14 0 0 0 666.4 56H716.4M652.4 28H704.4"/>
       <path d="M730.4 0H794.4M762.4 0V56"/>
     </g>
+    <!-- GitHub's mark, 16 units square: the button and its reflection draw it. -->
+    <path id="github-mark" fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
   </defs>
 </svg>
 <main class="stage">
@@ -197,7 +197,7 @@
       </svg>
     </h1>
     <a class="gd-btn gd-btn-primary github" href="https://github.com/krenel-net" aria-label="krenel-net on GitHub">
-      <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      <svg viewBox="0 0 16 16" aria-hidden="true"><use href="#github-mark"/></svg>
     </a>
     <button class="dependencies-open" popovertarget="dependencies">Dependencies</button>
     <section id="dependencies" class="gd-panel dependencies" popover aria-labelledby="dependencies-title">
@@ -206,10 +206,8 @@
         <button class="gd-btn gd-btn-ghost" popovertarget="dependencies" popovertargetaction="hide">Close</button>
       </div>
       <dl>
-        <dt class="gd-label">Font</dt>
-        <dd>The Saira font loads from Google Fonts. Your browser fetches it from fonts.googleapis.com and fonts.gstatic.com, so Google receives your IP address. <a href="https://fonts.google.com/faq#privacy">Google Fonts privacy</a></dd>
         <dt class="gd-label">Hosting</dt>
-        <dd>GitHub Pages serves this site. GitHub logs each visitor's IP address for security. <a href="https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages#data-collection">GitHub Pages data collection</a></dd>
+        <dd>GitHub Pages serves this site, its font included. GitHub logs each visitor's IP address for security. <a href="https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages#data-collection">GitHub Pages data collection</a></dd>
         <dt class="gd-label">Cookies and scripts</dt>
         <dd>This page sets no cookies. One short script in the page moves the glow with your pointer or your phone's tilt and sends nothing anywhere. On iPhone and iPad, tapping the page asks for motion access, and the readings stay in the page.</dd>
       </dl>
@@ -218,12 +216,12 @@
   <div class="gd-floor floor">
     <div class="floor-blooms" aria-hidden="true"></div>
     <div class="reflection github-reflection" aria-hidden="true">
-    <div class="gd-reflection-copy gd-btn gd-btn-primary github">
-      <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+    <div class="gd-btn gd-btn-primary github">
+      <svg viewBox="0 0 16 16"><use href="#github-mark"/></svg>
     </div>
     </div>
     <div class="reflection name-reflection" aria-hidden="true">
-    <div class="gd-reflection-copy name">
+    <div class="name">
       <svg class="name-base" viewBox="-29 -29 847.4 114"><use href="#wordmark"/></svg>
       <svg class="name-lit" viewBox="-29 -29 847.4 114"><use href="#wordmark"/></svg>
     </div>
@@ -242,7 +240,8 @@
   const floorBlooms = document.querySelector('.floor-blooms');
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let drift, pointer, rest, queued = false;
-  let asked = false, asking = false, gotReading = false; // iPhone motion permission: ask until answered, never once readings flow
+  let lampAt, bloomsAt; // what frame() last wrote, so it can skip a write that changes nothing
+  let mayAskMotion = true; // iPhone motion permission: whether the next tap may ask for it
 
   // Cache the drift distance; it changes only on resize. The blooms layer reaches that far past the screen's left edge.
   // The name's rect is read fresh each frame, since scrolling moves it.
@@ -250,28 +249,41 @@
     drift = -blooms.offsetLeft;
   }
 
-  const clamp = (v) => Math.max(-1, Math.min(1, v));
+  const clamp = (v, lo = -1) => Math.max(lo, Math.min(1, v));
 
+  // The lamp moves in whole viewBox units and the blooms in whole pixels, steps too small to see through the soft lamp
+  // and the slow swing. Unchanged values are not written again, and an unlit lamp is not moved at all, so a phone lying
+  // still (its light off in the dead zone) leaves the page idle.
   function frame() {
     queued = false;
     const box = lit.getBoundingClientRect(); // one read per frame, before any write
     const x = pointer.x;
     const y = pointer.y + pointer.toName * (box.top + box.height / 2 - pointer.y); // toName slides the light up onto the name's centre
-    const view = lit.viewBox.baseVal;
-    const scale = view.width / box.width; // the SVG scales uniformly
-    lamp.setAttribute('cx', view.x + (x - box.left) * scale);
-    lamp.setAttribute('cy', view.y + (y - box.top) * scale);
+    if (pointer.on) {
+      const view = lit.viewBox.baseVal;
+      const scale = view.width / box.width; // the SVG scales uniformly
+      const cx = Math.round(view.x + (x - box.left) * scale);
+      const cy = Math.round(view.y + (y - box.top) * scale);
+      if (`${cx} ${cy}` !== lampAt) {
+        lampAt = `${cx} ${cy}`;
+        lamp.setAttribute('cx', cx);
+        lamp.setAttribute('cy', cy);
+      }
+    }
     if (still) return;
-    const nx = clamp((x / innerWidth) * 2 - 1);
-    const ny = clamp((y / innerHeight) * 2 - 1);
-    blooms.style.transform = `translate3d(${-nx * drift}px, ${-ny * drift}px, 0)`;
-    floorBlooms.style.transform = `translate3d(${-nx * drift}px, ${ny * drift}px, 0) scaleY(-1)`; // the mirror: same x, opposite y
+    const dx = Math.round(-clamp((x / innerWidth) * 2 - 1) * drift);
+    const dy = Math.round(-clamp((y / innerHeight) * 2 - 1) * drift);
+    const shift = `translate3d(${dx}px, ${dy}px, 0)`;
+    if (shift !== bloomsAt) {
+      bloomsAt = shift;
+      blooms.style.transform = floorBlooms.style.transform = shift; // CSS mirrors the floor's copy, so it moves y the other way
+    }
   }
 
-  // Any pointer position, real or from tilt, places the lamp. A pointer always shows the lit layer; tilt shows it only outside
-  // the dead zone (on = false). toName (0..1) pulls the light toward the name's centre.
+  // Any pointer position, real or from tilt, swings the blooms and, while the lamp is on, places it. A pointer always turns
+  // the lamp on; tilt turns it on only outside the dead zone (on = false). toName (0..1) pulls the light toward the name's centre.
   function point(x, y, toName = 0, on = true) {
-    pointer = { x, y, toName };
+    pointer = { x, y, toName, on };
     root.classList.toggle('lamp-on', on);
     if (!queued) { queued = true; requestAnimationFrame(frame); }
   }
@@ -283,36 +295,36 @@
   root.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') root.classList.remove('lamp-on'); });
 
   // Phones: tilt acts as a pointer. The resting angle maps to the screen centre, where the GitHub button is, so the name
-  // stays a ghost at rest: within TILT_DEAD_ZONE_DEG of it the light is off, since at 812x375 the lamp at the button reaches the letters. Tilting the top away (beta falling) slides the light up to the name's centre over TILT_TO_NAME_DEG
-  // and holds it there; tilting the top toward you sweeps it down toward the bottom edge. Sideways tilt (gamma) sweeps
-  // along the screen. Desktop Chrome sends one null reading, which the guard drops.
+  // stays a ghost at rest: within TILT_DEAD_ZONE_DEG of it the light is off, since at 812x375 the lamp at the button
+  // reaches the letters. Tilting the top away (beta falling) slides the light up to the name's centre over
+  // TILT_TO_NAME_DEG and holds it there; tilting the top toward you sweeps it down toward the bottom edge. Sideways tilt
+  // (gamma) sweeps along the screen. Desktop Chrome sends one null reading, which the guard drops.
   addEventListener('deviceorientation', (e) => {
     if (e.beta === null || e.gamma === null) return;
-    gotReading = true;
+    mayAskMotion = false; // readings flow, so there is nothing to ask for
     rest = rest || { beta: e.beta, gamma: e.gamma }; // the first reading is the resting angle
     const away = rest.beta - e.beta; // positive when the top tilts away
     const side = e.gamma - rest.gamma;
     point(
       innerWidth / 2 + clamp(side / MAX_TILT_DEG) * innerWidth / 2,
-      innerHeight / 2 + Math.min(1, Math.max(0, -away / MAX_TILT_DEG)) * innerHeight / 2,
-      Math.max(0, clamp(away / TILT_TO_NAME_DEG)),
+      innerHeight / 2 + clamp(-away / MAX_TILT_DEG, 0) * innerHeight / 2,
+      clamp(away / TILT_TO_NAME_DEG, 0),
       Math.abs(away) > TILT_DEAD_ZONE_DEG || Math.abs(side) > TILT_DEAD_ZONE_DEG
     );
   }, { passive: true });
 
-  // iOS Safari sends no readings until requestPermission() is granted, and only inside a user gesture. A tap (touchend,
-  // which only touch fires) asks if the browser has that call and no reading has arrived (Android never needs it).
-  // Granted readings reach the listener above. Once answered, even 'denied', it never asks again; a rejection
-  // (not a gesture, say) lets the next tap retry. Taps on links, buttons and inside the open panel keep their own job; a tap that light-dismisses the panel lands outside it and may ask.
-  addEventListener('touchend', (e) => {
-    if (asked || asking || gotReading) return;
-    if (typeof DeviceOrientationEvent === 'undefined' || typeof DeviceOrientationEvent.requestPermission !== 'function') return;
-    if (e.target.closest('a, button, [popover]')) return;
-    asking = true;
-    DeviceOrientationEvent.requestPermission()
-      .then(() => { asked = true; }, () => {})
-      .finally(() => { asking = false; });
-  });
+  // iOS Safari sends no readings until requestPermission() is granted, and only inside a user gesture, so a tap
+  // (touchend, which only touch fires) asks. Only browsers with that call listen; Android and desktop never need it.
+  // Granted readings reach the listener above. Once answered, even 'denied', it never asks again; a rejection (not a
+  // gesture, say) lets the next tap retry. Taps on links, buttons and inside the open panel keep their own job; a tap
+  // that light-dismisses the panel lands outside it and may ask.
+  if (window.DeviceOrientationEvent?.requestPermission) {
+    addEventListener('touchend', (e) => {
+      if (!mayAskMotion || e.target.closest('a, button, [popover]')) return;
+      mayAskMotion = false;
+      DeviceOrientationEvent.requestPermission().catch(() => { mayAskMotion = true; });
+    });
+  }
 </script>
 </body>
 </html>
