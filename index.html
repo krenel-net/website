@@ -33,10 +33,10 @@
     --bloom-drift-duration: 1800ms; /* a slow, soft swing */
     --amber-bloom-strength: 24%; /* the amber bloom's share of Grid's amber; the opal blooms are 10 to 12%, but amber reads dimmer on this dark page */
     --bloom-drift-easing: ease-out;
-    /* The floor is black gloss, so its reflections are dark and soft: dimmer and blurrier than Grid's defaults in grid/tokens.css would
-       make them on a clear mirror, and gone sooner. */
-    --reflection-strong-opacity: 0.55;
-    --reflection-strong-blur: 2px;
+    /* The floor is black gloss, so its reflections are darker and softer than a clear mirror's, and gone sooner;
+       still stronger than Grid's faint default (see grid/tokens.css). */
+    --reflection-gloss-opacity: 0.55;
+    --reflection-gloss-blur: 2px;
     --reflection-fade-end: 75%; /* how far down the reflection (and its glow room) the fade reaches clear, from the horizon */
     --reflection-glow-room: 48px; /* padding round each reflection inside its mask box, so the glow is not cut off at the copy's edge */
     --floor-sheen-depth: 8%; /* how far down the floor the thin gloss highlight reaches, from the horizon */
@@ -75,7 +75,7 @@
      glow, which spills past the copy, fades inside the wrapper and shows no box edge. The -webkit- form is for Safari. */
   .reflection {
     position: absolute; inset-inline: 0; display: flex; justify-content: center; padding-block: var(--reflection-glow-room);
-    opacity: var(--reflection-strong-opacity); filter: blur(var(--reflection-strong-blur));
+    opacity: var(--reflection-gloss-opacity); filter: blur(var(--reflection-gloss-blur));
     -webkit-mask-image: linear-gradient(to bottom, black, transparent var(--reflection-fade-end)); mask-image: linear-gradient(to bottom, black, transparent var(--reflection-fade-end));
   }
   .reflection .gd-reflection-copy { margin: 0; opacity: 1; filter: none; }
