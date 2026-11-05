@@ -36,7 +36,7 @@
     --reflection-strong-opacity: 0.8;
     --reflection-strong-blur: 1px;
     --reflection-glow-room: 48px; /* how far the fade's mask reaches past the copy on every side, so the glow is not cut off at the copy's box */
-    --floor-surface-share: 70%; /* how much of Grid's floor colour stays opaque, so the blooms show through a little dimmer than in the sky */
+    --floor-surface-share: 45%; /* how much of Grid's floor colour stays opaque, so the blooms show through a little dimmer than in the sky */
     --link-fade-duration: 160ms; /* Grid's button timing */
     --link-fade-easing: ease;
   }
@@ -48,6 +48,7 @@
   .stage { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: var(--horizon); }
   .sky, .floor { padding-inline: var(--page-inset); }
   .sky { display: flex; flex-direction: column; align-items: center; padding-bottom: var(--horizon-gap); }
+  /* A see-through floor: the blooms and the page's grid lines show through it. */
   .floor { position: relative; overflow: hidden; background: color-mix(in srgb, var(--surface) var(--floor-surface-share), transparent); display: flex; flex-direction: column; padding-bottom: var(--floor-bottom); } /* clips a reflection that runs past a short screen */
   h1, h2 { margin: 0; }
   .sky .name { margin: auto 0 var(--name-gap); } /* floats the name a gap above the button */
@@ -64,20 +65,20 @@
   #lamp stop:last-child { stop-color: var(--white-light); stop-opacity: 0; }
   /* Reflections: what stands h above the horizon is mirrored h below it. They sit out of the flow so the Dependencies note keeps
      the floor's corner. The name's reflection holds both layers, so the lamp lights the mirrored letters too. */
-  .floor .gd-reflection-copy { position: absolute; inset-inline: 0; margin: 0 auto; opacity: var(--reflection-strong-opacity); filter: blur(var(--reflection-strong-blur)); }
+  .floor .gd-reflection-copy {
+    position: absolute; inset-inline: 0; margin: 0 auto; opacity: var(--reflection-strong-opacity); filter: blur(var(--reflection-strong-blur));
+    /* The page's own fade. Grid's opaque cover would paint a dark box over the blooms, so the copy is masked instead: opaque at the
+       horizon end, clear at the far end, over the copy plus the glow room on every side, so the glow spills past the box and fades
+       too. The mask is flipped with the copy, so "to top" runs from the horizon. The -webkit- forms are for Safari. */
+    -webkit-mask-image: linear-gradient(to top, black, transparent); mask-image: linear-gradient(to top, black, transparent);
+    -webkit-mask-size: calc(100% + 2 * var(--reflection-glow-room)) calc(100% + 2 * var(--reflection-glow-room)); mask-size: calc(100% + 2 * var(--reflection-glow-room)) calc(100% + 2 * var(--reflection-glow-room));
+    -webkit-mask-position: calc(-1 * var(--reflection-glow-room)) calc(-1 * var(--reflection-glow-room)); mask-position: calc(-1 * var(--reflection-glow-room)) calc(-1 * var(--reflection-glow-room));
+    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+    mask-clip: no-clip;
+  }
+  .gd-reflection-copy::after { content: none; } /* Grid's cover, off */
   .github-reflection { top: var(--horizon-gap); }
   .name-reflection { top: calc(var(--horizon-gap) + var(--github-size) + var(--name-gap)); }
-  /* The reflection's fade is ours, and stays even if Grid's own fade is fixed. Grid's opaque cover would paint a dark box over the
-     blooms, so it is off and the copy is masked instead: opaque at the horizon end, clear at the far end, over the copy's full
-     length. The mask is flipped with the copy, so "to top" runs from the horizon. It reaches the glow room past the copy on
-     every side, and holds opaque or clear inside that room, so the glow spills past the box and fades too. */
-  .gd-reflection-copy::after { content: none; }
-  .floor .gd-reflection-copy {
-    mask-image: linear-gradient(to top, #000 var(--reflection-glow-room), transparent calc(100% - var(--reflection-glow-room)));
-    mask-size: calc(100% + 2 * var(--reflection-glow-room)) calc(100% + 2 * var(--reflection-glow-room));
-    mask-position: calc(-1 * var(--reflection-glow-room)) calc(-1 * var(--reflection-glow-room));
-    mask-repeat: no-repeat; mask-clip: no-clip;
-  }
   a.gd-btn { text-decoration: none; }
   /* The GitHub button: Grid's primary button as a circle around the icon. */
   .github { box-sizing: border-box; width: var(--github-size); height: var(--github-size); padding: 0; justify-content: center; border-radius: 50%; }
