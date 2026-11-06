@@ -1,6 +1,6 @@
 # krenel.net
 
-One-screen landing page for the krenel-net GitHub org, served by GitHub Pages at https://krenel.net. Pushing to `main` deploys it once GitHub Pages is set up (state: `.memory/deploy-status.md`).
+One-screen landing page for the krenel-net GitHub org, served by GitHub Pages at https://krenel.net. Pushing to `main` deploys it.
 
 - `index.html`: the page. Page-only sizes are CSS variables at the top of its `<style>`.
 - `fonts/`: Saira, self-hosted: Google Fonts' latin woff2 (variable weight, all the page needs) and its OFL licence, which must ship with it.
