@@ -14,7 +14,7 @@ One-screen landing page for the krenel-net GitHub org, served by GitHub Pages at
 
 ## Done means
 
-`./check.sh` prints nothing, and in a browser at desktop and about 375px wide: Saira loaded, no sideways scroll. The GitHub icon is dead centre and reaches the org. The name is a barely visible ghost above it that lights up under the pointer. The blooms, including an amber one, swing away from the pointer. The name and the GitHub button each have a visible dark-gloss reflection below the horizon on a black glossy floor that also reflects the background glows, and the name's reflection mirrors the lit letters. Dependencies opens, and closes with Esc, a click outside, or Close.
+`./check.sh` prints nothing, and in a browser at desktop and about 375px wide: Saira loaded, no sideways scroll. The GitHub icon is dead centre and reaches the org. The name is a barely visible ghost above it that lights up under the pointer; on a phone a light wanders over it by itself, near the name about 70% of the time; on desktop, z switches between the two; with reduced motion the light rests on the name's centre. The blooms, including an amber one, swing away from the pointer or the wandering light. The name and the GitHub button each have a visible dark-gloss reflection below the horizon on a black glossy floor that also reflects the background glows, and the name's reflection mirrors the lit letters. Dependencies opens, and closes with Esc, a click outside, or Close.
 
 ## Rules
 

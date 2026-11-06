@@ -63,7 +63,7 @@
   .name { display: grid; width: var(--name-width); }
   .name svg { grid-area: 1 / 1; display: block; width: 100%; height: auto; }
   .name-base { stroke: var(--cyan); opacity: var(--name-base-opacity); filter: var(--name-glow); }
-  /* Hidden until the script first places the lamp, and again when the pointer leaves the window. */
+  /* Hidden until the script first places the lamp, and again when the mouse leaves the window while it steers the light. */
   .name-lit { stroke: url(#lamp); opacity: 0; filter: var(--name-lit-glow); transition: opacity var(--lamp-fade-duration) var(--lamp-fade-easing); }
   .lamp-on .name-lit { opacity: 1; }
   #lamp stop { stop-color: var(--white-light); }
@@ -209,7 +209,7 @@
         <dt class="gd-label">Hosting</dt>
         <dd>GitHub Pages serves this site, its font included. GitHub logs each visitor's IP address for security. <a href="https://docs.github.com/en/pages/getting-started-with-github-pages/about-github-pages#data-collection">GitHub Pages data collection</a></dd>
         <dt class="gd-label">Cookies and scripts</dt>
-        <dd>This page sets no cookies. One short script in the page moves the glow with your pointer or your phone's tilt and sends nothing anywhere. On iPhone and iPad, tapping the page asks for motion access, and the readings stay in the page.</dd>
+        <dd>This page sets no cookies. One short script in the page moves the glow with your pointer, or lets it wander on its own, and sends nothing anywhere.</dd>
       </dl>
     </section>
   </div>
@@ -229,9 +229,12 @@
   </div>
 </main>
 <script>
-  const MAX_TILT_DEG = 30; // tilt from the resting angle that sends the virtual pointer to a screen edge
-  const TILT_DEAD_ZONE_DEG = 3; // within this much of the resting angle on both axes the light stays off, so the name stays a ghost at rest
-  const TILT_TO_NAME_DEG = 15; // tilting the top away by this much puts the light on the name's centre, and it stays there beyond it
+  // Wandering: on phones and tablets, and on desktop after pressing z, the light glides about by itself instead of
+  // following the pointer.
+  const WANDER_NAME_CROSSING_MS = 12000; // a glide across the name's full width takes this long, so the speed follows the name's size and feels the same on every screen
+  const WANDER_MIN_LEG_MS = 3000; // the shortest glide, so short hops stay slow too
+  const NEAR_NAME_SHARE = 0.7; // share of wandering time the light spends near the name, inside its box; the rest it spends anywhere else on screen
+  const MAX_FRAME_MS = 100; // the longest frame gap counted, so a tab that was hidden neither skews that share nor makes the light jump
 
   const root = document.documentElement;
   const lit = document.querySelector('.name-lit');
@@ -239,9 +242,10 @@
   const blooms = document.querySelector('.blooms');
   const floorBlooms = document.querySelector('.floor-blooms');
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let drift, pointer, rest, queued = false;
+  let drift, pointer, queued = false; // pointer: where the light is, real or wandering, in screen pixels
   let lampAt, bloomsAt; // what frame() last wrote, so it can skip a write that changes nothing
-  let mayAskMotion = true; // iPhone motion permission: whether the next tap may ask for it
+  let wandering = false, glide, lastTime; // the glide under way, and the time of the previous wandering frame
+  let nearMs = 0, wanderMs = 0; // wandering time spent inside the name's box, and in all
 
   // Cache the drift distance; it changes only on resize. The blooms layer reaches that far past the screen's left edge.
   // The name's rect is read fresh each frame, since scrolling moves it.
@@ -249,30 +253,29 @@
     drift = -blooms.offsetLeft;
   }
 
-  const clamp = (v, lo = -1) => Math.max(lo, Math.min(1, v));
+  const clamp = (v) => Math.max(-1, Math.min(1, v));
+  const inside = (p, box) => p.x >= box.left && p.x <= box.right && p.y >= box.top && p.y <= box.bottom;
 
   // The lamp moves in whole viewBox units and the blooms in whole pixels, steps too small to see through the soft lamp
-  // and the slow swing. Unchanged values are not written again, and an unlit lamp is not moved at all, so a phone lying
-  // still (its light off in the dead zone) leaves the page idle.
-  function frame() {
+  // and the slow swing. Unchanged values are not written again. Only wandering queues the next frame, so a still mouse
+  // leaves the page idle.
+  function frame(time) {
     queued = false;
     const box = lit.getBoundingClientRect(); // one read per frame, before any write
-    const x = pointer.x;
-    const y = pointer.y + pointer.toName * (box.top + box.height / 2 - pointer.y); // toName slides the light up onto the name's centre
-    if (pointer.on) {
-      const view = lit.viewBox.baseVal;
-      const scale = view.width / box.width; // the SVG scales uniformly
-      const cx = Math.round(view.x + (x - box.left) * scale);
-      const cy = Math.round(view.y + (y - box.top) * scale);
-      if (`${cx} ${cy}` !== lampAt) {
-        lampAt = `${cx} ${cy}`;
-        lamp.setAttribute('cx', cx);
-        lamp.setAttribute('cy', cy);
-      }
+    if (wandering) wander(box, time);
+    if (!pointer) { root.classList.remove('lamp-on'); return; } // z twice before this first frame: the light was never placed, so it stays dark
+    const view = lit.viewBox.baseVal;
+    const scale = view.width / box.width; // the SVG scales uniformly
+    const cx = Math.round(view.x + (pointer.x - box.left) * scale);
+    const cy = Math.round(view.y + (pointer.y - box.top) * scale);
+    if (`${cx} ${cy}` !== lampAt) {
+      lampAt = `${cx} ${cy}`;
+      lamp.setAttribute('cx', cx);
+      lamp.setAttribute('cy', cy);
     }
     if (still) return;
-    const dx = Math.round(-clamp((x / innerWidth) * 2 - 1) * drift);
-    const dy = Math.round(-clamp((y / innerHeight) * 2 - 1) * drift);
+    const dx = Math.round(-clamp((pointer.x / innerWidth) * 2 - 1) * drift);
+    const dy = Math.round(-clamp((pointer.y / innerHeight) * 2 - 1) * drift);
     const shift = `translate3d(${dx}px, ${dy}px, 0)`;
     if (shift !== bloomsAt) {
       bloomsAt = shift;
@@ -280,51 +283,84 @@
     }
   }
 
-  // Any pointer position, real or from tilt, swings the blooms and, while the lamp is on, places it. A pointer always turns
-  // the lamp on; tilt turns it on only outside the dead zone (on = false). toName (0..1) pulls the light toward the name's centre.
-  function point(x, y, toName = 0, on = true) {
-    pointer = { x, y, toName, on };
-    root.classList.toggle('lamp-on', on);
+  // Moves the light one frame along its glide, which eases in and out, and queues the next frame. Each glide starts where
+  // the light is, so the path never jumps. Under reduced motion the light rests on the name's centre instead, and no
+  // frame follows; the lamp is placed in the wordmark's own units, so it stays centred through a resize.
+  function wander(box, time) {
+    const centre = { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+    if (still) { pointer = centre; return; }
+    pointer = pointer || centre; // a phone's light starts on the name's centre
+    const dt = Math.min(time - (lastTime ?? time), MAX_FRAME_MS);
+    lastTime = time;
+    wanderMs += dt;
+    if (inside(pointer, box)) nearMs += dt;
+    if (!glide || glide.elapsed >= glide.ms) glide = nextGlide(box);
+    glide.elapsed = Math.min(glide.elapsed + dt, glide.ms);
+    const t = glide.elapsed / glide.ms;
+    const ease = t * t * (3 - 2 * t); // smoothstep: slow at both ends
+    pointer = { x: glide.from.x + (glide.to.x - glide.from.x) * ease, y: glide.from.y + (glide.to.y - glide.from.y) * ease };
+    queue();
+  }
+
+  // Aims a glide from the light to a random point: inside the name's box while the share of wandering time spent there
+  // is at or below NEAR_NAME_SHARE, anywhere else on screen otherwise. Steering on measured time holds that share on any
+  // screen; a plain 70% coin flip per glide would fall short, since a trip away from a thin name spends little of its
+  // time near it.
+  function nextGlide(box) {
+    const toName = nearMs <= NEAR_NAME_SHARE * wanderMs;
+    let to;
+    do {
+      to = toName
+        ? { x: box.left + Math.random() * box.width, y: box.top + Math.random() * box.height }
+        : { x: Math.random() * innerWidth, y: Math.random() * innerHeight };
+    } while (!toName && inside(to, box));
+    const ms = Math.max(WANDER_MIN_LEG_MS, Math.hypot(to.x - pointer.x, to.y - pointer.y) / box.width * WANDER_NAME_CROSSING_MS);
+    return { from: pointer, to, ms, elapsed: 0 };
+  }
+
+  function queue() {
     if (!queued) { queued = true; requestAnimationFrame(frame); }
   }
 
-  measure();
-  addEventListener('resize', measure);
-  addEventListener('pointermove', (e) => point(e.clientX, e.clientY), { passive: true });
-  // On touch, pointerleave fires after every lift; only a mouse leaving the window hides the light.
-  root.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') root.classList.remove('lamp-on'); });
-
-  // Phones: tilt acts as a pointer. The resting angle maps to the screen centre, where the GitHub button is, so the name
-  // stays a ghost at rest: within TILT_DEAD_ZONE_DEG of it the light is off, since at 812x375 the lamp at the button
-  // reaches the letters. Tilting the top away (beta falling) slides the light up to the name's centre over
-  // TILT_TO_NAME_DEG and holds it there; tilting the top toward you sweeps it down toward the bottom edge. Sideways tilt
-  // (gamma) sweeps along the screen. Desktop Chrome sends one null reading, which the guard drops.
-  addEventListener('deviceorientation', (e) => {
-    if (e.beta === null || e.gamma === null) return;
-    mayAskMotion = false; // readings flow, so there is nothing to ask for
-    rest = rest || { beta: e.beta, gamma: e.gamma }; // the first reading is the resting angle
-    const away = rest.beta - e.beta; // positive when the top tilts away
-    const side = e.gamma - rest.gamma;
-    point(
-      innerWidth / 2 + clamp(side / MAX_TILT_DEG) * innerWidth / 2,
-      innerHeight / 2 + clamp(-away / MAX_TILT_DEG, 0) * innerHeight / 2,
-      clamp(away / TILT_TO_NAME_DEG, 0),
-      Math.abs(away) > TILT_DEAD_ZONE_DEG || Math.abs(side) > TILT_DEAD_ZONE_DEG
-    );
-  }, { passive: true });
-
-  // iOS Safari sends no readings until requestPermission() is granted, and only inside a user gesture, so a tap
-  // (touchend, which only touch fires) asks. Only browsers with that call listen; Android and desktop never need it.
-  // Granted readings reach the listener above. Once answered, even 'denied', it never asks again; a rejection (not a
-  // gesture, say) lets the next tap retry. Taps on links, buttons and inside the open panel keep their own job; a tap
-  // that light-dismisses the panel lands outside it and may ask.
-  if (window.DeviceOrientationEvent?.requestPermission) {
-    addEventListener('touchend', (e) => {
-      if (!mayAskMotion || e.target.closest('a, button, [popover]')) return;
-      mayAskMotion = false;
-      DeviceOrientationEvent.requestPermission().catch(() => { mayAskMotion = true; });
-    });
+  // A pointer position turns the lamp on, places it and swings the blooms.
+  function point(x, y) {
+    pointer = { x, y };
+    root.classList.add('lamp-on');
+    queue();
   }
+
+  // Starting resets the frame clock and the glide, so the first glide starts where the light is now. Stopping leaves the
+  // light where it is until the pointer next moves.
+  function setWandering(on) {
+    wandering = on;
+    if (!on) return;
+    glide = lastTime = undefined;
+    root.classList.add('lamp-on');
+    queue();
+  }
+
+  measure();
+  // A resize, a phone turning say, also ends the glide under way and pulls the light back onto the new screen, so the
+  // next glide starts on it and is aimed and timed for it.
+  addEventListener('resize', () => {
+    measure();
+    glide = undefined;
+    if (pointer) pointer = { x: Math.min(pointer.x, innerWidth), y: Math.min(pointer.y, innerHeight) };
+  });
+  // While the light wanders, the pointer neither steers it nor hides it.
+  addEventListener('pointermove', (e) => { if (!wandering) point(e.clientX, e.clientY); }, { passive: true });
+  // On touch, pointerleave fires after every lift; only a mouse leaving the window hides the light.
+  root.addEventListener('pointerleave', (e) => { if (!wandering && e.pointerType === 'mouse') root.classList.remove('lamp-on'); });
+
+  // Phones and tablets, whose main input can't hover, wander from the start; a finger never steers the light.
+  if (matchMedia('(hover: none)').matches) setWandering(true);
+
+  // Easter egg, deliberately left off the page: z switches between following the mouse and wandering. Handed back, the
+  // light jumps to the mouse on its next move and the blooms ease over. Ctrl, Cmd or Alt+Z (undo) and a held key's
+  // repeats do nothing.
+  addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'z' && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) setWandering(!wandering);
+  });
 </script>
 </body>
 </html>
