@@ -20,9 +20,12 @@
     --name-aspect: calc(847.4 / 114);     /* the wordmark's viewBox width over its height; keep in step with the viewBox of the four wordmark SVGs */
     --name-base-opacity: 0.03;      /* the unlit wordmark: a ghost a careful eye can still find */
     --name-glow: drop-shadow(0 0 4px var(--cyan)); /* static glow on the base wordmark: one small shadow, so the ghost has no hard edge */
-    --name-lit-glow: drop-shadow(0 0 6px var(--cyan)) drop-shadow(0 0 18px var(--cyan)); /* glow on the lit letters; it shines only where the lamp lights the stroke */
+    --name-lit-glow: drop-shadow(0 0 6px var(--cyan)) drop-shadow(0 0 18px var(--cyan)); /* glow on the lit letters; it shines only where the lamp lights the stroke, or on phones the whole name */
     --lamp-fade-duration: 300ms; /* the lit layer fading in under the pointer and out when it leaves */
     --lamp-fade-easing: ease;
+    --name-pulse-duration: 2.5s; /* phones: the whole lit name fading down or back up, one way */
+    --name-pulse-dim: 0.25;      /* phones: the lit name's opacity at the bottom of each pulse */
+    --name-pulse-easing: ease-in-out;
     --screen-height: 100vh;  /* the screen's height; dvh below follows a phone's moving address bar */
     --horizon-gap: var(--space-4); /* space between the GitHub button's bottom edge and the horizon */
     --sky-height: calc(var(--screen-height) / 2 + var(--github-size) / 2 + var(--horizon-gap)); /* the sky ends a gap below the button's bottom edge, which puts the button's centre at mid-screen */
@@ -67,9 +70,19 @@
   .name-base { stroke: var(--cyan); opacity: var(--name-base-opacity); filter: var(--name-glow); }
   /* Hidden until the script first places the lamp, and again when the mouse leaves the window while it steers the light. */
   .name-lit { stroke: url(#lamp); opacity: 0; filter: var(--name-lit-glow); transition: opacity var(--lamp-fade-duration) var(--lamp-fade-easing); }
+  .name-reflection .name-lit { stroke: url(#lamp-reflection); }
   .lamp-on .name-lit { opacity: 1; }
-  #lamp stop { stop-color: var(--white-light); }
-  #lamp stop:last-child { stop-opacity: 0; }
+  .lamp stop { stop-color: var(--white-light); }
+  .lamp stop:last-child { stop-opacity: 0; }
+  /* Phones and tablets, which can't hover: no lamp. The whole name is lit and slowly pulses, its reflection with it; with
+     reduced motion it stays lit. Opacity alone animates, so the glow is drawn once and not redrawn every frame. */
+  @media (hover: none) {
+    .name-lit, .name-reflection .name-lit { stroke: var(--white-light); opacity: 1; } /* the second selector outranks the reflection's lamp stroke above */
+  }
+  @media (hover: none) and (prefers-reduced-motion: no-preference) {
+    .name-lit { animation: name-pulse var(--name-pulse-duration) var(--name-pulse-easing) infinite alternate; }
+  }
+  @keyframes name-pulse { from { opacity: var(--name-pulse-dim); } }
   /* Reflections: what stands h above the horizon is mirrored h below it. They sit out of the flow, positioned from the
      horizon, and take no pointer events. The name's reflection holds both layers, so the lamp lights the mirrored letters
      too. Each copy sits in a wrapper that is the glow room taller on both ends (its negative margin keeps each top at the
@@ -190,8 +203,9 @@
       <svg class="name-lit" viewBox="-29 -29 847.4 114" aria-hidden="true">
         <defs>
           <!-- The lamp: lit area of the wordmark, radius 112 (twice the cap height of 56) in viewBox units, so it covers about two
-               letters. The script sets cx and cy; until then the lit layer is hidden. -->
-          <radialGradient id="lamp" gradientUnits="userSpaceOnUse" r="112">
+               letters. The script sets cx and cy, here and on the reflection's lamp; until then the lit layer is hidden. Phones
+               have no lamp: the CSS lights the whole name. -->
+          <radialGradient id="lamp" class="lamp" gradientUnits="userSpaceOnUse" r="112">
             <stop offset="0"/><stop offset="1"/>
           </radialGradient>
         </defs>
@@ -225,14 +239,22 @@
     <div class="reflection name-reflection" aria-hidden="true">
     <div class="name">
       <svg class="name-base" viewBox="-29 -29 847.4 114"><use href="#wordmark"/></svg>
-      <svg class="name-lit" viewBox="-29 -29 847.4 114"><use href="#wordmark"/></svg>
+      <svg class="name-lit" viewBox="-29 -29 847.4 114">
+        <!-- The reflection's own lamp, which the script moves with #lamp: Safari does not repaint a copy that takes its
+             paint from a gradient in another SVG, so the reflection would keep showing where the lamp first was. -->
+        <defs>
+          <radialGradient id="lamp-reflection" class="lamp" gradientUnits="userSpaceOnUse" r="112">
+            <stop offset="0"/><stop offset="1"/>
+          </radialGradient>
+        </defs>
+        <use href="#wordmark"/>
+      </svg>
     </div>
     </div>
   </div>
 </main>
 <script>
-  // Wandering: on phones and tablets, and on desktop after pressing z, the light glides about by itself instead of
-  // following the pointer.
+  // Wandering: after pressing z, the light glides about by itself instead of following the mouse.
   const WANDER_NAME_CROSSING_MS = 12000; // a glide across the name's full width takes this long, so the speed follows the name's size and feels the same on every screen
   const WANDER_MIN_LEG_MS = 3000; // the shortest glide, so short hops stay slow too
   const NEAR_NAME_SHARE = 0.7; // share of wandering time the light spends near the name, inside its box; the rest it spends anywhere else on screen
@@ -240,7 +262,7 @@
 
   const root = document.documentElement;
   const lit = document.querySelector('.name-lit');
-  const lamp = document.getElementById('lamp');
+  const lamps = document.querySelectorAll('.lamp'); // the name's lamp and its reflection's, moved together
   const blooms = document.querySelector('.blooms');
   const floorBlooms = document.querySelector('.floor-blooms');
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -272,8 +294,10 @@
     const cy = Math.round(view.y + (pointer.y - box.top) * scale);
     if (`${cx} ${cy}` !== lampAt) {
       lampAt = `${cx} ${cy}`;
-      lamp.setAttribute('cx', cx);
-      lamp.setAttribute('cy', cy);
+      for (const lamp of lamps) {
+        lamp.setAttribute('cx', cx);
+        lamp.setAttribute('cy', cy);
+      }
     }
     if (still) return;
     const dx = Math.round(-clamp((pointer.x / innerWidth) * 2 - 1) * drift);
@@ -291,7 +315,7 @@
   function wander(box, time) {
     const centre = { x: box.left + box.width / 2, y: box.top + box.height / 2 };
     if (still) { pointer = centre; return; }
-    pointer = pointer || centre; // a phone's light starts on the name's centre
+    pointer = pointer || centre; // a light the mouse has not placed yet starts on the name's centre
     const dt = Math.min(time - (lastTime ?? time), MAX_FRAME_MS);
     lastTime = time;
     wanderMs += dt;
@@ -341,28 +365,29 @@
     queue();
   }
 
-  measure();
-  // A resize, a phone turning say, also ends the glide under way and pulls the light back onto the new screen, so the
-  // next glide starts on it and is aimed and timed for it.
-  addEventListener('resize', () => {
+  // Phones and tablets, whose main input can't hover, get the whole name lit and pulsing from CSS instead, so the script
+  // leaves them be: a finger moves nothing.
+  if (!matchMedia('(hover: none)').matches) {
     measure();
-    glide = undefined;
-    if (pointer) pointer = { x: Math.min(pointer.x, innerWidth), y: Math.min(pointer.y, innerHeight) };
-  });
-  // While the light wanders, the pointer neither steers it nor hides it.
-  addEventListener('pointermove', (e) => { if (!wandering) point(e.clientX, e.clientY); }, { passive: true });
-  // On touch, pointerleave fires after every lift; only a mouse leaving the window hides the light.
-  root.addEventListener('pointerleave', (e) => { if (!wandering && e.pointerType === 'mouse') root.classList.remove('lamp-on'); });
+    // A resize also ends the glide under way and pulls the light back onto the new screen, so the next glide starts on
+    // it and is aimed and timed for it.
+    addEventListener('resize', () => {
+      measure();
+      glide = undefined;
+      if (pointer) pointer = { x: Math.min(pointer.x, innerWidth), y: Math.min(pointer.y, innerHeight) };
+    });
+    // While the light wanders, the pointer neither steers it nor hides it.
+    addEventListener('pointermove', (e) => { if (!wandering) point(e.clientX, e.clientY); }, { passive: true });
+    // On touch, pointerleave fires after every lift; only a mouse leaving the window hides the light.
+    root.addEventListener('pointerleave', (e) => { if (!wandering && e.pointerType === 'mouse') root.classList.remove('lamp-on'); });
 
-  // Phones and tablets, whose main input can't hover, wander from the start; a finger never steers the light.
-  if (matchMedia('(hover: none)').matches) setWandering(true);
-
-  // Easter egg, deliberately left off the page: z switches between following the mouse and wandering. Handed back, the
-  // light jumps to the mouse on its next move and the blooms ease over. Ctrl, Cmd or Alt+Z (undo) and a held key's
-  // repeats do nothing.
-  addEventListener('keydown', (e) => {
-    if (e.key.toLowerCase() === 'z' && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) setWandering(!wandering);
-  });
+    // Easter egg, deliberately left off the page: z switches between following the mouse and wandering. Handed back,
+    // the light jumps to the mouse on its next move and the blooms ease over. Ctrl, Cmd or Alt+Z (undo) and a held key's
+    // repeats do nothing.
+    addEventListener('keydown', (e) => {
+      if (e.key.toLowerCase() === 'z' && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) setWandering(!wandering);
+    });
+  }
 </script>
 </body>
 </html>
