@@ -1,2 +1,1 @@
-# website
-krenel.net
+[website](https://krenel.net)
